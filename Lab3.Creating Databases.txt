@@ -1,0 +1,71 @@
+azamatabdykadyrov@MacBook-Air-Azamat ~ % psql -h localhost -p 5432 -U azamatabdykadyrov -d postgres
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# CREATE DATABASE database_name;
+CREATE DATABASE
+postgres=# CREATE DATABASE university;
+CREATE DATABASE
+postgres=# \l
+                                        List of databases
+     Name      |       Owner       | Encoding |   Collate   |    Ctype    |   Access privileges   
+---------------+-------------------+----------+-------------+-------------+-----------------------
+ database_name | azamatabdykadyrov | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ postgres      | postgres          | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ template0     | postgres          | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+               |                   |          |             |             | postgres=CTc/postgres
+ template1     | postgres          | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+               |                   |          |             |             | postgres=CTc/postgres
+ university    | azamatabdykadyrov | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+(5 rows)
+
+postgres=# \c database_name
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+You are now connected to database "database_name" as user "azamatabdykadyrov".
+database_name=# \c university 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+You are now connected to database "university" as user "azamatabdykadyrov".
+university=# \q
+azamatabdykadyrov@MacBook-Air-Azamat ~ % psql -h localhost -p 5432 -U azamatabdykadyrov -d postgres
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# \l
+                                        List of databases
+     Name      |       Owner       | Encoding |   Collate   |    Ctype    |   Access privileges   
+---------------+-------------------+----------+-------------+-------------+-----------------------
+ database_name | azamatabdykadyrov | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ postgres      | postgres          | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ template0     | postgres          | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+               |                   |          |             |             | postgres=CTc/postgres
+ template1     | postgres          | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+               |                   |          |             |             | postgres=CTc/postgres
+ university    | azamatabdykadyrov | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+(5 rows)
+
+postgres=# DROP DATABASE university;
+DROP DATABASE
+postgres=# DROP DATABASE database_name;
+DROP DATABASE
+postgres=# \l
+                                  List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+-----------+----------+----------+-------------+-------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+(3 rows)
+
+postgres=# 

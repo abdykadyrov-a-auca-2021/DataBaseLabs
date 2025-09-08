@@ -1,0 +1,33 @@
+postgres=# CREATE TABLE students (id SERIAL PRIMARY KEY, name VARCHAR(100) , email VARCHAR(100), faculty VARCHAR(100));
+CREATE TABLE
+postgres=# INSERT INTO students (name, email, faculty) VALUES ('Azamat', 'abdykadyrov_a@auca.kg', 'SFW122');
+INSERT 0 1
+postgres=# SELECT name FROM students WHERE name = 'Azamat';
+  name  
+--------
+ Azamat
+(1 row)
+
+postgres=# SELECT name, email, faculty FROM students WHERE name = 'Azamat' 
+postgres-# ;
+  name  |         email         | faculty 
+--------+-----------------------+---------
+ Azamat | abdykadyrov_a@auca.kg | SFW122
+(1 row)
+
+postgres=# INSERT INTO students (name, email, faculty) VALUES ('student', 'student@auca.kg', 'BA');
+INSERT 0 1
+postgres=# SELECT * FROM students;
+ id |  name   |         email         | faculty 
+----+---------+-----------------------+---------
+  1 | Azamat  | abdykadyrov_a@auca.kg | SFW122
+  2 | student | student@auca.kg       | BA
+(2 rows)
+
+postgres=# SELECT name, email FROM students LIMIT 1;
+  name  |         email         
+--------+-----------------------
+ Azamat | abdykadyrov_a@auca.kg
+(1 row)
+
+postgres=# 
