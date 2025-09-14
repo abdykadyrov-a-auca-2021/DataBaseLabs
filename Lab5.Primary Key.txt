@@ -1,0 +1,172 @@
+azamatabdykadyrov@MacBook-Air-Azamat ~ % psql -h localhost -p 5432 -U azamatabdykadyrov  -d postgres
+
+
+
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# \l
+                                  List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges   
+-----------+----------+----------+-------------+-------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | 
+ template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 | =c/postgres          +
+           |          |          |             |             | postgres=CTc/postgres
+(3 rows)
+
+postgres=# \d
+                        List of relations
+ Schema |          Name           |   Type   |       Owner       
+--------+-------------------------+----------+-------------------
+ public | students_student_id_seq | sequence | azamatabdykadyrov
+ public | university_students     | table    | azamatabdykadyrov
+(2 rows)
+
+postgres=# -- Define primary key at column level
+CREATE TABLE students (
+    student_id INTEGER PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(150)
+);
+
+CREATE TABLE
+postgres=# DROP TABLE students;
+DROP TABLE
+postgres=# -- Define primary key at table level
+CREATE TABLE students (
+    student_id INTEGER,
+    name VARCHAR(100),
+    email VARCHAR(150),
+    PRIMARY KEY (student_id)
+);
+CREATE TABLE
+postgres=# DROP TABLE students;
+DROP TABLE
+postgres=# Define primary key with a custom name
+CREATE TABLE students (
+    student_id INTEGER,
+    name VARCHAR(100),
+    email VARCHAR(150),
+    CONSTRAINT pk_students PRIMARY KEY (student_id)
+);
+ERROR:  syntax error at or near "Define"
+LINE 1: Define primary key with a custom name
+        ^
+postgres=# -- Define primary key with a custom name
+CREATE TABLE students (
+    student_id INTEGER,
+    name VARCHAR(100),
+    email VARCHAR(150),
+    CONSTRAINT pk_students PRIMARY KEY (student_id)
+);
+
+CREATE TABLE
+postgres=# DROP TABLE students;
+DROP TABLE
+postgres=# CREATE TABLE students (
+    student_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE,
+    faculty VARCHAR(50)
+);
+
+-- Insert sample data
+INSERT INTO students (name, email, faculty) VALUES
+('Alice Johnson', 'alice@alatoo.edu.kg', 'Computer Science'),
+('Bob Smith', 'bob@alatoo.edu.kg', 'Mathematics'),
+('Carol Davis', 'carol@alatoo.edu.kg', 'Computer Science');
+
+CREATE TABLE
+INSERT 0 3
+postgres=# CREATE TABLE course_enrollments (
+    student_id INTEGER,
+    course_id INTEGER,
+    semester VARCHAR(20),
+    enrollment_date DATE DEFAULT CURRENT_DATE,
+    grade CHAR(2),
+    PRIMARY KEY (student_id, course_id, semester)
+);
+
+-- Insert sample data
+INSERT INTO course_enrollments (student_id, course_id, semester, grade) VALUES
+(1, 101, '2024-Spring', 'A'),
+(1, 102, '2024-Spring', 'B+'),
+(2, 101, '2024-Spring', 'A-'),
+(1, 101, '2024-Fall', 'A+');  -- Same student can take same course in different semester
+
+CREATE TABLE
+INSERT 0 4
+postgres=# CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100) NOT NULL,
+    price DECIMAL(10,2)
+);
+
+-- SERIAL is equivalent to:
+-- product_id INTEGER NOT NULL DEFAULT nextval('products_product_id_seq'),
+-- where products_product_id_seq is an automatically created sequence
+
+CREATE TABLE
+postgres=# \d
+                        List of relations
+ Schema |           Name           |   Type   |       Owner       
+--------+--------------------------+----------+-------------------
+ public | course_enrollments       | table    | azamatabdykadyrov
+ public | products                 | table    | azamatabdykadyrov
+ public | products_product_id_seq  | sequence | azamatabdykadyrov
+ public | students                 | table    | azamatabdykadyrov
+ public | students_student_id_seq  | sequence | azamatabdykadyrov
+ public | students_student_id_seq1 | sequence | azamatabdykadyrov
+ public | university_students      | table    | azamatabdykadyrov
+(7 rows)
+
+postgres=# CREATE TABLE transactions (
+    transaction_id BIGSERIAL PRIMARY KEY,  -- Can handle very large numbers
+    amount DECIMAL(15,2),
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE
+postgres=# -- IDENTITY ALWAYS - PostgreSQL controls the value completely
+CREATE TABLE orders (
+    order_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    customer_name VARCHAR(100),
+    order_date DATE DEFAULT CURRENT_DATE
+);
+
+-- IDENTITY BY DEFAULT - Allows manual insertion but auto-generates if not provided
+CREATE TABLE customers (
+    customer_id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    customer_name VARCHAR(100),
+    email VARCHAR(150)
+);
+
+-- You can still insert specific values with BY DEFAULT
+INSERT INTO customers (customer_id, customer_name, email) 
+VALUES (1000, 'VIP Customer', 'vip@example.com');
+
+CREATE TABLE
+CREATE TABLE
+INSERT 0 1
+postgres=# CREATE TABLE departments (
+    dept_id INTEGER PRIMARY KEY,
+    dept_name VARCHAR(100)
+);
+
+-- This will fail due to duplicate primary key
+INSERT INTO departments VALUES (1, 'Computer Science');
+INSERT INTO departments VALUES (1, 'Mathematics'); -- ERROR: duplicate key value 
+
+CREATE TABLE
+INSERT 0 1
+ERROR:  duplicate key value violates unique constraint "departments_pkey"
+DETAIL:  Key (dept_id)=(1) already exists.
+postgres=# INSERT INTO departments VALUES (NULL, 'Physics'); -- ERROR: null value in column "dept_id"
+ERROR:  null value in column "dept_id" of relation "departments" violates not-null constraint
+DETAIL:  Failing row contains (null, Physics).
+postgres=# 
