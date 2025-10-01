@@ -1,0 +1,133 @@
+azamatabdykadyrov@MacBook-Air-Azamat ~ % psql -h localhost -p 5432 -U azamatabdykadyrov  -d postgres
+
+
+
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# \dt
+                    List of relations
+ Schema |        Name         | Type  |       Owner       
+--------+---------------------+-------+-------------------
+ public | course_enrollments  | table | azamatabdykadyrov
+ public | courses             | table | azamatabdykadyrov
+ public | customers           | table | azamatabdykadyrov
+ public | departments         | table | azamatabdykadyrov
+ public | employees           | table | azamatabdykadyrov
+ public | orders              | table | azamatabdykadyrov
+ public | products            | table | azamatabdykadyrov
+ public | student_enrollments | table | azamatabdykadyrov
+ public | students            | table | azamatabdykadyrov
+ public | transactions        | table | azamatabdykadyrov
+ public | university_students | table | azamatabdykadyrov
+ public | user_profiles       | table | azamatabdykadyrov
+ public | users               | table | azamatabdykadyrov
+(13 rows)
+
+postgres=# CREATE TABLE students_bad (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    phone_numbers TEXT -- "123-456-7890, 098-765-4321"
+);
+CREATE TABLE
+postgres=# CREATE TABLE students (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(100)
+);
+
+CREATE TABLE student_phones (
+    student_id INT,
+    phone_number VARCHAR(15),
+    phone_type VARCHAR(20), -- 'mobile', 'home', и т.п.
+    PRIMARY KEY (student_id, phone_number),
+    FOREIGN KEY (student_id) REFERENCES students(student_id)
+);
+ERROR:  relation "students" already exists
+CREATE TABLE
+postgres=# DROP TABLE students
+postgres-# CREATE TABLE students (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(100)
+);
+ERROR:  syntax error at or near "CREATE"
+LINE 2: CREATE TABLE students (
+        ^
+postgres=# DROP TABLE students;
+ERROR:  cannot drop table students because other objects depend on it
+DETAIL:  constraint student_enrollments_student_id_fkey on table student_enrollments depends on table students
+constraint student_phones_student_id_fkey on table student_phones depends on table students
+HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+postgres=# DROP TABLE students CASCADE ;
+NOTICE:  drop cascades to 2 other objects
+DETAIL:  drop cascades to constraint student_enrollments_student_id_fkey on table student_enrollments
+drop cascades to constraint student_phones_student_id_fkey on table student_phones
+DROP TABLE
+postgres=# CREATE TABLE students (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(100)
+);
+CREATE TABLE
+postgres=# INSERT INTO students (name) VALUES
+('Alice'),
+('Bob');
+
+INSERT INTO student_phones (student_id, phone_number, phone_type) VALUES
+(1, '123-456-7890', 'mobile'),
+(1, '098-765-4321', 'home'),
+(2, '555-111-2222', 'mobile');
+ERROR:  null value in column "student_id" of relation "students" violates not-null constraint
+DETAIL:  Failing row contains (null, Alice).
+INSERT 0 3
+postgres=# DROP TABLE IF EXISTS enrollments CASCADE;
+DROP TABLE IF EXISTS courses CASCADE;
+DROP TABLE IF EXISTS students CASCADE;
+NOTICE:  table "enrollments" does not exist, skipping
+DROP TABLE
+NOTICE:  drop cascades to constraint student_enrollments_course_id_fkey on table student_enrollments
+DROP TABLE
+DROP TABLE
+postgres=# CREATE TABLE courses (
+  course_id   INT PRIMARY KEY,
+  course_name VARCHAR(100) NOT NULL,
+  credits     INT
+);
+
+CREATE TABLE enrollments (
+  student_id INT,
+  course_id  INT,
+  grade      CHAR(2),
+  PRIMARY KEY (student_id, course_id),
+  FOREIGN KEY (student_id) REFERENCES students(student_id),
+  FOREIGN KEY (course_id)  REFERENCES courses(course_id)
+);
+CREATE TABLE
+ERROR:  relation "students" does not exist
+postgres=# CREATE TABLE students (
+  student_id SERIAL PRIMARY KEY,
+  name       VARCHAR(100) NOT NULL
+);
+CREATE TABLE
+postgres=# DROP TABLE IF EXISTS students CASCADE;
+DROP TABLE IF EXISTS departments CASCADE;
+DROP TABLE
+NOTICE:  drop cascades to constraint employees_dept_id_fkey on table employees
+DROP TABLE
+postgres=# CREATE TABLE departments (
+  department_id   INT PRIMARY KEY,
+  department_name VARCHAR(100) NOT NULL UNIQUE,
+  department_head VARCHAR(100)
+);
+CREATE TABLE
+postgres=# CREATE TABLE students (
+  student_id   SERIAL PRIMARY KEY,
+  name         VARCHAR(100) NOT NULL,
+  department_id INT,
+  FOREIGN KEY (department_id) REFERENCES departments(department_id)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL
+);
+CREATE TABLE
+postgres=# 

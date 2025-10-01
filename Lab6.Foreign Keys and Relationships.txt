@@ -1,0 +1,427 @@
+Last login: Sun Sep 14 19:39:40 on ttys001
+azamatabdykadyrov@MacBook-Air-Azamat ~ % psql -h localhost -p 5432 -U azamatabdykadyrov  -d postgres
+
+
+
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# \d
+                            List of relations
+ Schema |              Name               |   Type   |       Owner       
+--------+---------------------------------+----------+-------------------
+ public | course_enrollments              | table    | azamatabdykadyrov
+ public | customers                       | table    | azamatabdykadyrov
+ public | customers_customer_id_seq       | sequence | azamatabdykadyrov
+ public | departments                     | table    | azamatabdykadyrov
+ public | orders                          | table    | azamatabdykadyrov
+ public | orders_order_id_seq             | sequence | azamatabdykadyrov
+ public | products                        | table    | azamatabdykadyrov
+ public | products_product_id_seq         | sequence | azamatabdykadyrov
+ public | students                        | table    | azamatabdykadyrov
+ public | students_student_id_seq         | sequence | azamatabdykadyrov
+ public | students_student_id_seq1        | sequence | azamatabdykadyrov
+ public | transactions                    | table    | azamatabdykadyrov
+ public | transactions_transaction_id_seq | sequence | azamatabdykadyrov
+ public | university_students             | table    | azamatabdykadyrov
+(14 rows)
+
+
+postgres=# DROP TABLE departments ;
+DROP TABLE
+postgres=# -- First, create the parent table
+Create Table departments (
+dept_id SERIAL PRIMARY KEY,
+dept_name VARCHAR(100) NOT NULL,
+location VARCHAR(100)
+);
+CREATE TABLE
+                  ^
+postgres=#  -- Then create the child table with foreign key
+CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL, 
+last_name VARCHAR(50) NOT NULL, 
+dept_id INTEGER REFERENCES departments(dept_id)
+);
+CREATE TABLE
+
+postgres=# DROP TABLE employees;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+postgres(# emp_id SERIAL PRIMARY KEY, 
+postgres(# first_name VARCHAR(50) NOT NULL,
+postgres(# last_name VARCHAR(50) NOT NULL,
+postgres(# dept_id INTEGER, 
+postgres(# FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+postgres(# );
+CREATE TABLE
+
+postgres=# -- Add foreign key constraint to existing table
+ALTER TABLE employees
+ADD CONSTRAINT fk_employee_department
+FOREIGN KEY (dept_id) REFERENCES departments(dept_id);
+ALTER TABLE
+postgres=# DROP TABLE employees ;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+postgres(# emp_id SERIAL PRIMARY KEY, 
+postgres(# first_name VARCHAR(50) NOT NULL,
+postgres(# last_name VARCHAR(50) NOT NULL,
+postgres(# dept_id INTEGER, 
+postgres(# CONSTRAINT fk_employee_department
+postgres(# 
+
+postgres(# FOREIGN KEY (dept_id) REFERENCES departments(dept_id) );
+CREATE TABLE
+
+
+postgres=# INSERT INTO departments (dept_name, location) VALUES
+  ('Engineering', 'Building A'),
+  ('Marketing', 'Building B'),
+  ('HR', 'Building C');
+INSERT 0 3
+postgres=# -- This INSERT will work - references existing department
+postgres=# INSERT INTO employees (first_name, last_n)
+
+postgres=# INSERT INTO employees (first_name, last_name, dept_id) VALUES
+postgres-# ('John', 'Smith', 1)
+postgres-# ;
+INSERT 0 1
+postgres=# -- This INSERT will work - references existing department
+INSERT INTO employees (first_name, last_name, dept_id) VALUES
+('John', 'Doe', 99)
+;
+ERROR:  insert or update on table "employees" violates foreign key constraint "fk_employee_department"
+DETAIL:  Key (dept_id)=(99) is not present in table "departments".
+postgres=# DELETE FROM departments WHERE dept_id = 1; 
+ERROR:  update or delete on table "departments" violates foreign key constraint "fk_employee_department" on table "employees"
+DETAIL:  Key (dept_id)=(1) is still referenced from table "employees".
+postgres=# DROP TABLE employees ;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+postgres(# emp_id SERIAL PRIMARY KEY,
+postgres(# first_name VARCHAR(50) NOT NULL,
+postgres(# last_name VARCHAR(50) NOT NULL,
+postgres(# dept_id INTEGER REFERENCES de
+
+postgres(# dept_id INTEGER REFERENCES departmnets(dept_id) ON DELETE CASCADE 
+postgres(# );
+ERROR:  relation "departmnets" does not exist
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON DELETE CASCADE 
+);
+CREATE TABLE
+postgres=# --When department is deleted, all employees in that department also deleted
+postgres=# DELETE FROM departments WHERE dept_id = 1;
+DELETE 1
+postgres=# DROP TABLE employees ;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON DELETE  
+);
+
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON DELETE SET NULL 
+);
+CREATE TABLE
+postgres=# -- When department is delated, employees' dept_id becomes NULL
+postgres=# DELETE FROM departments WHERE dept_id = 1;
+DELETE 0
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER DEFAULT 0 REFERENCES departments(dept_id) ON DELETE SET DEFAULT 
+  
+);
+ERROR:  relation "employees" already exists
+postgres=# DROP TABLE employees ;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER DEFAULT 0 REFERENCES departments(dept_id) ON DELETE SET DEFAULT  
+);
+CREATE TABLE
+postgres=# DROP TABLE employees ;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON DELETE SET DEFAULT 
+);
+
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON DELETE SET RESTRICT 
+);
+ERROR:  syntax error at or near "RESTRICT"
+LINE 5: ...EGER REFERENCES departments(dept_id) ON DELETE SET RESTRICT 
+                                                              ^
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON DELETE RESTRICT 
+);
+
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON DELETE RESTRICT 
+);
+CREATE TABLE
+postgres=# DELETE FROM departments WHERE dept_id = 1;
+DELETE 0
+postgres=# -- because there was no foreign key
+postgres=# ;
+postgres=# 
+postgres=# DROP TABLE employees ;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON DELETE RESTRICT 
+);
+
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON UPDATE CASCADE 
+);
+CREATE TABLE
+postgres=# UPDATE departments SET dept_id = 100 WHERE dept_id = 1;
+UPDATE 0
+postgres=# DROP TABLE employees;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON UPDATE CASCADE 
+);
+
+postgres=# CREATE TABLE employees (
+emp_id SERIAL PRIMARY KEY,
+first_name VARCHAR(50) NOT NULL,
+last_name VARCHAR(50) NOT NULL,
+dept_id INTEGER REFERENCES departments(dept_id) ON UPDATE CASCADE 
+postgres(# ON DELETE CASCADE );
+CREATE TABLE
+postgres=# 
+                           
+postgres=# CREATE TABLE users (
+user_id SERIAL PRIMARY KEY,
+username VARCHAR(50) UNIQUE NOT NULL,
+email VARCHAR(100) UNIQUE NOT NULL, 
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE
+
+postgres=# -- Child table with one-to-one relationship
+postgres=# CREATE TABLE user_profiles (
+postgres(# profile_id SERIAL PRIMARY KEY, 
+postgres(# user_id INTEGER UNIQUE NOT NULL, -- UNIQUE ensures one-to-one
+postgres(# first_name VARCHAR(50),
+postgres(# last_name VARCHAR(50), 
+postgres(# bio TEXT, 
+postgres(# profile_picture_url VARCHAR(255), 
+postgres(# FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE);
+CREATE TABLE
+postgres=# 
+
+
+postgres=# DROP TABLE user_profiles ;
+DROP TABLE
+postgres=# CREATE TABLE user_profiles (
+  user_id INTEGER PRIMARY KEY,                              
+  first_name VARCHAR(50),
+  last_name VARCHAR(50),
+  bio TEXT,
+  profile_picture_url VARCHAR(255),
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+CREATE TABLE
+postgres=# -- Insert user
+INSERT INTO users (username, email) VALUES
+('johndoe', 'john@example.com');
+INSERT 0 1
+postgres=# -- Insert corresponding profile (one-to-one)
+INSERT INTO user_profiles (user_id, first_name, last_name, bio) VALUES
+(1, 'John', 'Doe', 'Software developer passionate about databases');
+INSERT 0 1
+postgres=#  This would fail due to UNIQUE constraint
+INSERT INTO user_profiles (user_id, first_name, last_name) VALUES
+(1, 'Jane', 'Smith');  
+ERROR:  syntax error at or near "This"
+LINE 1: This would fail due to UNIQUE constraint
+        ^
+postgres=# -- This would fail due to UNIQUE constraint
+INSERT INTO user_profiles (user_id, first_name, last_name) VALUES
+(1, 'Jane', 'Smith');
+ERROR:  duplicate key value violates unique constraint "user_profiles_pkey"
+DETAIL:  Key (user_id)=(1) already exists.
+postgres=# DROP TABLE departments ;
+ERROR:  cannot drop table departments because other objects depend on it
+DETAIL:  constraint employees_dept_id_fkey on table employees depends on table departments
+HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+postgres=# DROP TABLE departments CASCADE;
+NOTICE:  drop cascades to constraint employees_dept_id_fkey on table employees
+DROP TABLE
+postgres=# DROP TABLE employees ;
+DROP TABLE
+postgres=# CREATE TABLE departments (
+    dept_id SERIAL PRIMARY KEY,
+    dept_name VARCHAR(100) NOT NULL,
+    manager_name VARCHAR(100),
+    budget DECIMAL(10,2)
+);
+CREATE TABLE
+postgres=# -- Child table (many side)
+CREATE TABLE employees (
+    emp_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    position VARCHAR(100),
+    salary DECIMAL(10,2),
+    hire_date DATE DEFAULT CURRENT_DATE,
+    dept_id INTEGER NOT NULL, -- Foreign key
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id) ON DELETE RESTRICT
+);
+CREATE TABLE
+postgres=# -- First parent table
+CREATE TABLE students (
+    student_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    enrollment_date DATE DEFAULT CURRENT_DATE
+);
+ERROR:  relation "students" already exists
+postgres=# DROP TABLE students ;
+DROP TABLE
+postgres=# -- First parent table
+CREATE TABLE students (
+    student_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    enrollment_date DATE DEFAULT CURRENT_DATE
+);
+CREATE TABLE
+postgres=# -- Second parent table
+CREATE TABLE courses (
+    course_id SERIAL PRIMARY KEY,
+    course_code VARCHAR(10) UNIQUE NOT NULL,
+    course_name VARCHAR(100) NOT NULL,
+    credits INTEGER NOT NULL,
+    instructor VARCHAR(100)
+);
+CREATE TABLE
+postgres=# 
+-- Junction table for many-to-many relationship
+CREATE TABLE student_enrollments (
+    enrollment_id SERIAL PRIMARY KEY,
+    student_id INTEGER NOT NULL,
+    course_id INTEGER NOT NULL,
+    enrollment_date DATE DEFAULT CURRENT_DATE,
+    grade CHAR(2), -- Additional attributes specific to the relationship
+
+    -- Foreign key constraints
+    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE,
+
+    -- Prevent duplicate enrollments
+    UNIQUE(student_id, course_id)
+);
+CREATE TABLE
+postgres=# INSERT INTO students (first_name, last_name, email) VALUES
+('Alice', 'Johnson', 'alice@university.edu'),
+('Bob', 'Smith', 'bob@university.edu'),
+('Carol', 'Wilson', 'carol@university.edu');
+INSERT 0 3
+postgres=# 
+INSERT INTO courses (course_code, course_name, credits, instructor) VALUES
+('CS101', 'Introduction to Programming', 3, 'Dr. Brown'),
+('CS201', 'Data Structures', 4, 'Dr. Davis'),
+('MATH101', 'Calculus I', 4, 'Dr. Wilson');
+INSERT 0 3
+postgres=# INSERT INTO student_enrollments (student_id, course_id, grade) VALUES 
+(1, 1, 'A'),   -- Alice in CS101
+(1, 2, 'B+'),  -- Alice in CS201
+(2, 1, 'A-'),  -- Bob in CS101
+(2, 3, 'B'),   -- Bob in MATH101
+(3, 2, 'A'),   -- Carol in CS201
+(3, 3, 'A-');  -- Carol in MATH101
+INSERT 0 6
+postgres=# 
+postgres=# -- Complex query showing many-to-many relationships
+SELECT
+    s.first_name || ' ' || s.last_name AS student_name,
+    c.course_code,
+    c.course_name,
+    se.grade,
+    se.enrollment_date
+FROM students s
+JOIN student_enrollments se ON s.student_id = se.student_id
+JOIN courses c ON se.course_id = c.course_id
+ORDER BY s.last_name, c.course_code;
+
+
+-- Find all students in a specific course
+SELECT s.first_name, s.last_name, se.grade
+FROM students s
+JOIN student_enrollments se ON s.student_id = se.student_id
+JOIN courses c ON se.course_id = c.course_id
+WHERE c.course_code = 'CS101';
+
+
+-- Find all courses for a specific student
+SELECT c.course_code, c.course_name, c.credits, se.grade
+FROM courses c
+JOIN student_enrollments se ON c.course_id = se.course_id
+JOIN students s ON se.student_id = s.student_id
+WHERE s.email = 'alice@university.edu';
+ student_name  | course_code |         course_name         | grade | enrollment_date 
+---------------+-------------+-----------------------------+-------+-----------------
+ Alice Johnson | CS101       | Introduction to Programming | A     | 2025-09-18
+ Alice Johnson | CS201       | Data Structures             | B+    | 2025-09-18
+ Bob Smith     | CS101       | Introduction to Programming | A-    | 2025-09-18
+ Bob Smith     | MATH101     | Calculus I                  | B     | 2025-09-18
+ Carol Wilson  | CS201       | Data Structures             | A     | 2025-09-18
+ Carol Wilson  | MATH101     | Calculus I                  | A-    | 2025-09-18
+(6 rows)
+
+ first_name | last_name | grade 
+------------+-----------+-------
+ Alice      | Johnson   | A 
+ Bob        | Smith     | A-
+(2 rows)
+
+ course_code |         course_name         | credits | grade 
+-------------+-----------------------------+---------+-------
+ CS101       | Introduction to Programming |       3 | A 
+ CS201       | Data Structures             |       4 | B+
+(2 rows)
+
+postgres=# 
