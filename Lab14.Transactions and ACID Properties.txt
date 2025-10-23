@@ -1,0 +1,277 @@
+postgres=# 
+postgres=# DROP TABLE IF EXISTS accounts CASCADE;
+CREATE TABLE accounts (
+  account_id  SERIAL PRIMARY KEY,
+  owner_name  TEXT NOT NULL,
+  balance     NUMERIC(12,2) NOT NULL CHECK (balance >= 0)
+);
+
+INSERT INTO accounts (owner_name, balance) VALUES
+('Alice', 2000.00), ('Bob', 500.00), ('Carol', 1500.00);
+NOTICE:  table "accounts" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+INSERT 0 3
+postgres=# DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
+CREATE TABLE customers (
+  customer_id SERIAL PRIMARY KEY,
+  name        TEXT NOT NULL,
+  email       TEXT UNIQUE
+);
+CREATE TABLE orders (
+  order_id    SERIAL PRIMARY KEY,
+  customer_id INT NOT NULL REFERENCES customers(customer_id),
+  total       NUMERIC(12,2) NOT NULL DEFAULT 0
+);
+CREATE TABLE order_items (
+  order_item_id SERIAL PRIMARY KEY,
+  order_id      INT NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
+  product_id    INT NOT NULL,
+  quantity      INT NOT NULL CHECK (quantity > 0)
+);
+NOTICE:  table "order_items" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+postgres=# 
+postgres=# -- 3. Склад (для примеров с инвентарём)
+DROP TABLE IF EXISTS inventory CASCADE;
+CREATE TABLE inventory (
+  product_id INT PRIMARY KEY,
+  stock      INT NOT NULL CHECK (stock >= 0)
+);
+INSERT INTO inventory (product_id, stock) VALUES
+(101, 10), (102, 5), (103, 0);
+
+-- 4. Товары (для SAVEPOINT’ов)
+DROP TABLE IF EXISTS products CASCADE;
+CREATE TABLE products (
+  product_id SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  price      NUMERIC(10,2) NOT NULL CHECK (price >= 0)
+);
+
+-- 5. Логи/аудит/пользователи (для best practices)
+DROP TABLE IF EXISTS user_preferences CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS audit_log CASCADE;
+DROP TABLE IF EXISTS logs CASCADE;
+
+CREATE TABLE users (
+  user_id  SERIAL PRIMARY KEY,
+  name     TEXT NOT NULL,
+  email    TEXT
+);
+CREATE TABLE user_preferences (
+  pref_id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  theme   TEXT
+);
+CREATE TABLE audit_log (
+  audit_id  SERIAL PRIMARY KEY,
+  action    TEXT,
+  ts        TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE TABLE logs (
+  log_id  SERIAL PRIMARY KEY,
+  message TEXT NOT NULL,
+  ts      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+NOTICE:  table "inventory" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+INSERT 0 3
+DROP TABLE
+CREATE TABLE
+NOTICE:  table "user_preferences" does not exist, skipping
+DROP TABLE
+NOTICE:  drop cascades to constraint user_profiles_user_id_fkey on table user_profiles
+DROP TABLE
+NOTICE:  table "audit_log" does not exist, skipping
+DROP TABLE
+NOTICE:  table "logs" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+postgres=# BEGIN;
+UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;
+UPDATE accounts SET balance = balance + 100 WHERE account_id = 2;
+COMMIT;
+
+SELECT * FROM accounts ORDER BY account_id;
+BEGIN
+UPDATE 1
+UPDATE 1
+COMMIT
+ account_id | owner_name | balance 
+------------+------------+---------
+          1 | Alice      | 1900.00
+          2 | Bob        |  600.00
+          3 | Carol      | 1500.00
+(3 rows)
+
+postgres=# BEGIN;
+-- Смотрим баланс
+SELECT balance FROM accounts WHERE account_id = 2;
+
+-- Если понимаем, что средств мало, просто делаем ROLLBACK:
+ROLLBACK;
+
+-- Ничего не изменилось
+SELECT * FROM accounts ORDER BY account_id;
+BEGIN
+ balance 
+---------
+  600.00
+(1 row)
+
+ROLLBACK
+ account_id | owner_name | balance 
+------------+------------+---------
+          1 | Alice      | 1900.00
+          2 | Bob        |  600.00
+          3 | Carol      | 1500.00
+(3 rows)
+
+postgres=# INSERT INTO customers (name, email) VALUES ('John Doe', 'john@email.com');
+INSERT 0 1
+postgres=# BEGIN;
+BEGIN
+postgres=*#  INSERT INTO orders (customer_id, total) VALUES (currval('customers_customer_id_seq'), 250.00);
+INSERT 0 1
+postgres=*#  INSERT INTO order_items (order_id, product_id, quantity)
+  VALUES (currval('orders_order_id_seq'), 101, 2);
+INSERT 0 1
+postgres=*#   UPDATE inventory SET stock = stock - 2 WHERE product_id = 101;
+UPDATE 1
+postgres=*# COMMIT;
+COMMIT
+postgres=# SELECT * FROM orders ORDER BY order_id;
+SELECT * FROM order_items ORDER BY order_item_id;
+SELECT * FROM inventory ORDER BY product_id;
+ order_id | customer_id | total  
+----------+-------------+--------
+        1 |           1 | 250.00
+(1 row)
+
+ order_item_id | order_id | product_id | quantity 
+---------------+----------+------------+----------
+             1 |        1 |        101 |        2
+(1 row)
+
+ product_id | stock 
+------------+-------
+        101 |     8
+        102 |     5
+        103 |     0
+(3 rows)
+
+postgres=# BEGIN;
+  INSERT INTO products (name, price) VALUES ('Laptop',   999.99);
+  SAVEPOINT sp1;
+
+  INSERT INTO products (name, price) VALUES ('Mouse',     25.99);
+  SAVEPOINT sp2;
+
+  -- Ошибочная вставка (бизнес-правило: цена не может быть отрицательной)
+  INSERT INTO products (name, price) VALUES ('Invalid Product', -50.00);
+BEGIN
+INSERT 0 1
+SAVEPOINT
+INSERT 0 1
+SAVEPOINT
+ERROR:  new row for relation "products" violates check constraint "products_price_check"
+DETAIL:  Failing row contains (3, Invalid Product, -50.00).
+postgres=!#  ROLLBACK TO SAVEPOINT sp2;
+ROLLBACK
+postgres=*#   INSERT INTO products (name, price) VALUES ('Keyboard',  79.99);
+COMMIT;
+
+SELECT * FROM products ORDER BY product_id;
+INSERT 0 1
+COMMIT
+ product_id |   name   | price  
+------------+----------+--------
+          1 | Laptop   | 999.99
+          2 | Mouse    |  25.99
+          4 | Keyboard |  79.99
+(3 rows)
+
+postgres=# BEGIN;
+  INSERT INTO logs (message) VALUES ('Starting process');
+  SAVEPOINT process_start;
+BEGIN
+INSERT 0 1
+SAVEPOINT
+postgres=*#  INSERT INTO logs (message) VALUES ('Process completed');
+INSERT 0 1
+postgres=*#   RELEASE SAVEPOINT process_start;
+COMMIT;
+RELEASE
+COMMIT
+postgres=# 
+SELECT * FROM logs ORDER BY log_id;
+ log_id |      message      |             ts             
+--------+-------------------+----------------------------
+      1 | Starting process  | 2025-10-23 17:56:35.584403
+      2 | Process completed | 2025-10-23 17:56:35.584403
+(2 rows)
+
+postgres=# BEGIN;
+  INSERT INTO audit_log (action) VALUES ('user_creation');
+  INSERT INTO users (name, email) VALUES ('Jane Roe', 'jane@example.com');
+  INSERT INTO user_preferences (user_id, theme)
+  VALUES (currval('users_user_id_seq'), 'dark');
+COMMIT;
+
+SELECT u.user_id, u.name, p.theme
+FROM users u LEFT JOIN user_preferences p USING (user_id)
+ORDER BY u.user_id;
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+COMMIT
+ user_id |   name   | theme 
+---------+----------+-------
+       1 | Jane Roe | dark
+(1 row)
+
+postgres=# ELECT 
+  blocked_locks.pid        AS blocked_pid,
+  blocked_activity.usename AS blocked_user,
+  blocking_locks.pid       AS blocking_pid,
+  blocking_activity.usename AS blocking_user,
+  blocked_activity.query   AS blocked_statement
+FROM pg_catalog.pg_locks blocked_locks
+JOIN pg_catalog.pg_stat_activity blocked_activity 
+  ON blocked_activity.pid = blocked_locks.pid
+JOIN pg_catalog.pg_locks blocking_locks 
+  ON blocking_locks.locktype = blocked_locks.locktype
+WHERE NOT blocked_locks.granted;
+ERROR:  syntax error at or near "ELECT"
+LINE 1: ELECT 
+        ^
+postgres=# SELECT 
+  blocked_locks.pid        AS blocked_pid,
+  blocked_activity.usename AS blocked_user,
+  blocking_locks.pid       AS blocking_pid,
+  blocking_activity.usename AS blocking_user,
+  blocked_activity.query   AS blocked_statement
+FROM pg_catalog.pg_locks blocked_locks
+JOIN pg_catalog.pg_stat_activity blocked_activity 
+  ON blocked_activity.pid = blocked_locks.pid
+JOIN pg_catalog.pg_locks blocking_locks 
+  ON blocking_locks.locktype = blocked_locks.locktype
+WHERE NOT blocked_locks.granted;
+ERROR:  missing FROM-clause entry for table "blocking_activity"
+LINE 5:   blocking_activity.usename AS blocking_user,
+          ^
+postgres=# 

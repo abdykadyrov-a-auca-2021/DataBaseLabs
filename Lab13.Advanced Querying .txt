@@ -1,0 +1,383 @@
+azamatabdykadyrov@MacBook-Air-Azamat DataBaseLabs % psql -h localhost -p 5432 -U azamatabdykadyrov  -d postgres
+
+
+
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# DROP TABLE IF EXISTS employees;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    salary NUMERIC(10,2)
+);
+CREATE TABLE
+postgres=# INSERT INTO employees (first_name, last_name, salary) VALUES
+('Alice', 'Johnson', 1200.00),
+('Bob', 'Smith', 1500.00),
+('Charlie', 'Brown', 1800.00),
+('Diana', 'Prince', 2000.00),
+('Ethan', 'Hunt', 2200.00),
+('Fiona', 'Davis', 1700.00),
+('George', 'Miller', 1300.00);
+INSERT 0 7
+postgres=# SELECT first_name, last_name, salary
+FROM employees
+WHERE salary > (
+    SELECT AVG(salary)  -- This scalar subquery returns a single value
+    FROM employees
+);
+ first_name | last_name | salary  
+------------+-----------+---------
+ Charlie    | Brown     | 1800.00
+ Diana      | Prince    | 2000.00
+ Ethan      | Hunt      | 2200.00
+ Fiona      | Davis     | 1700.00
+(4 rows)
+
+postgres=# DROP TABLE IF EXISTS orders; 
+DROP TABLE
+postgres=# CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    region_id INT,
+    amount DECIMAL(10,2),
+    order_date DATE
+);
+CREATE TABLE
+postgres=# INSERT INTO orders (region_id, amount, order_date) VALUES
+(1, 250000.00, '2025-01-05'),
+(1, 300000.00, '2025-02-10'),
+(1, 650000.00, '2025-03-12'),
+(2, 400000.00, '2025-01-15'),
+(2, 350000.00, '2025-03-08'),
+(3, 900000.00, '2025-02-01'),
+(3, 600000.00, '2025-03-18'),
+(4, 500000.00, '2025-02-20');
+INSERT 0 8
+postgres=# WITH regional_sales AS (
+    SELECT region_id, SUM(amount) AS total_sales
+    FROM orders
+    GROUP BY region_id
+)
+SELECT region_id, total_sales
+FROM regional_sales
+WHERE total_sales > 1000000;
+ region_id | total_sales 
+-----------+-------------
+         3 |  1500000.00
+         1 |  1200000.00
+(2 rows)
+
+postgres=# WITH RECURSIVE org_chart AS (
+    -- Anchor: Find the top-level manager (e.g., who has no manager)
+    SELECT employee_id, first_name, last_name, manager_id
+    FROM employees
+    WHERE manager_id IS NULL
+    UNION ALL
+    -- Recursive: Find everyone who reports to the people already in the chart
+    SELECT e.employee_id, e.first_name, e.last_name, e.manager_id
+    FROM employees e
+    INNER JOIN org_chart oc ON e.manager_id = oc.employee_id
+)
+SELECT * FROM org_chart;
+ERROR:  column "manager_id" does not exist
+LINE 3:     SELECT employee_id, first_name, last_name, manager_id
+                                                       ^
+postgres=# DROP TABLE IF EXISTS employees;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    first_name  VARCHAR(50) NOT NULL,
+    last_name   VARCHAR(50) NOT NULL,
+    manager_id  INT REFERENCES employees(employee_id)  -- ссылка на руководителя
+);
+CREATE TABLE
+postgres=# INSERT INTO employees (first_name, last_name, manager_id) VALUES
+-- Уровень 1 (корень)
+('Alice',  'Johnson', NULL),          -- CEO (employee_id = 1)
+-- Уровень 2
+('Bob',    'Smith',   1),             -- VP Engineering (id=2)
+('Cathy',  'Brown',   1),             -- VP Sales       (id=3)
+-- Уровень 3
+('Diana',  'Prince',  2),             -- Eng Manager    (id=4)
+('Ethan',  'Hunt',    2),             -- Eng Manager    (id=5)
+('Fiona',  'Davis',   3),             -- Sales Manager  (id=6)
+-- Уровень 4
+('George', 'Miller',  4),             -- Senior Eng     (id=7)
+('Hannah', 'Wilson',  4),             -- Eng            (id=8)
+('Ivan',   'Lopez',   5),             -- Eng            (id=9)
+('Julia',  'Clark',   6);             -- Sales Rep      (id=10)
+INSERT 0 10
+postgres=# WITH RECURSIVE org_chart AS (
+    -- Anchor: Find the top-level manager (e.g., who has no manager)
+    SELECT employee_id, first_name, last_name, manager_id
+    FROM employees
+    WHERE manager_id IS NULL
+    UNION ALL
+    -- Recursive: Find everyone who reports to the people already in the chart
+    SELECT e.employee_id, e.first_name, e.last_name, e.manager_id
+    FROM employees e
+    INNER JOIN org_chart oc ON e.manager_id = oc.employee_id
+)
+SELECT * FROM org_chart;
+ employee_id | first_name | last_name | manager_id 
+-------------+------------+-----------+------------
+           1 | Alice      | Johnson   |           
+           2 | Bob        | Smith     |          1
+           3 | Cathy      | Brown     |          1
+           4 | Diana      | Prince    |          2
+           5 | Ethan      | Hunt      |          2
+           6 | Fiona      | Davis     |          3
+           7 | George     | Miller    |          4
+           8 | Hannah     | Wilson    |          4
+           9 | Ivan       | Lopez     |          5
+          10 | Julia      | Clark     |          6
+(10 rows)
+
+postgres=# CREATE TABLE warehouse_1 (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100),
+    quantity INT
+);
+
+CREATE TABLE warehouse_2 (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100),
+    quantity INT
+);
+
+-- Склад №1
+INSERT INTO warehouse_1 (product_name, quantity) VALUES
+('Laptop', 10),
+('Mouse', 0),
+('Keyboard', 15),
+('Monitor', 5),
+('Webcam', 0);
+
+-- Склад №2
+INSERT INTO warehouse_2 (product_name, quantity) VALUES
+('Laptop', 20),
+('Mouse', 0),
+('Keyboard', 0),
+('Printer', 7),
+('Headphones', 12);
+CREATE TABLE
+CREATE TABLE
+INSERT 0 5
+INSERT 0 5
+postgres=# -- Get all unique products from both warehouses
+SELECT product_name FROM warehouse_1
+UNION
+SELECT product_name FROM warehouse_2;
+
+-- Find products that are out of stock in both warehouses
+SELECT product_id FROM warehouse_1 WHERE quantity = 0
+INTERSECT
+SELECT product_id FROM warehouse_2 WHERE quantity = 0;
+ product_name 
+--------------
+ Printer
+ Mouse
+ Laptop
+ Headphones
+ Webcam
+ Keyboard
+ Monitor
+(7 rows)
+
+ product_id 
+------------
+          2
+(1 row)
+
+postgres=# DROP TABLE IF EXISTS employees;
+
+CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    department VARCHAR(50),
+    salary NUMERIC(10,2)
+);
+
+INSERT INTO employees (first_name, last_name, department, salary) VALUES
+('Alice', 'Johnson', 'IT', 2200.00),
+('Bob', 'Smith', 'IT', 1800.00),
+('Charlie', 'Brown', 'IT', 1500.00),
+('Diana', 'Prince', 'Sales', 2000.00),
+('Ethan', 'Hunt', 'Sales', 1900.00),
+('Fiona', 'Davis', 'Sales', 1600.00),
+('George', 'Miller', 'HR', 1700.00),
+('Hannah', 'Wilson', 'HR', 1650.00);
+DROP TABLE
+CREATE TABLE
+INSERT 0 8
+postgres=# SELECT
+    first_name,
+    last_name,
+    department,
+    salary,
+    RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_salary_rank
+FROM employees;
+ first_name | last_name | department | salary  | dept_salary_rank 
+------------+-----------+------------+---------+------------------
+ George     | Miller    | HR         | 1700.00 |                1
+ Hannah     | Wilson    | HR         | 1650.00 |                2
+ Alice      | Johnson   | IT         | 2200.00 |                1
+ Bob        | Smith     | IT         | 1800.00 |                2
+ Charlie    | Brown     | IT         | 1500.00 |                3
+ Diana      | Prince    | Sales      | 2000.00 |                1
+ Ethan      | Hunt      | Sales      | 1900.00 |                2
+ Fiona      | Davis     | Sales      | 1600.00 |                3
+(8 rows)
+
+postgres=# DROP TABLE IF EXISTS sales;
+
+CREATE TABLE sales (
+    product_name VARCHAR(100),
+    year INT,
+    sales_amount DECIMAL(10,2)
+);
+DROP TABLE
+CREATE TABLE
+postgres=# INSERT INTO sales (product_name, year, sales_amount) VALUES
+('Laptop', 2022, 15000.00),
+('Laptop', 2023, 20000.00),
+('Laptop', 2024, 18000.00),
+('Phone', 2022, 25000.00),
+('Phone', 2023, 27000.00),
+('Phone', 2024, 29000.00),
+('Tablet', 2022, 12000.00),
+('Tablet', 2023, 16000.00),
+('Tablet', 2024, 19000.00);
+INSERT 0 9
+postgres=# SELECT
+    product_name,
+    SUM(CASE WHEN year = 2022 THEN sales_amount ELSE 0 END) AS year_2022,
+    SUM(CASE WHEN year = 2023 THEN sales_amount ELSE 0 END) AS year_2023,
+    SUM(CASE WHEN year = 2024 THEN sales_amount ELSE 0 END) AS year_2024
+FROM sales
+GROUP BY product_name
+ORDER BY product_name;
+ product_name | year_2022 | year_2023 | year_2024 
+--------------+-----------+-----------+-----------
+ Laptop       |  15000.00 |  20000.00 |  18000.00
+ Phone        |  25000.00 |  27000.00 |  29000.00
+ Tablet       |  12000.00 |  16000.00 |  19000.00
+(3 rows)
+
+postgres=# CREATE TEMP TABLE pivoted_sales AS
+SELECT
+    product_name,
+    SUM(CASE WHEN year = 2022 THEN sales_amount ELSE 0 END) AS year_2022,
+    SUM(CASE WHEN year = 2023 THEN sales_amount ELSE 0 END) AS year_2023,
+    SUM(CASE WHEN year = 2024 THEN sales_amount ELSE 0 END) AS year_2024
+FROM sales
+GROUP BY product_name;
+SELECT 3
+postgres=# SELECT product_name, '2022' AS year, year_2022 AS sales_amount FROM pivoted_sales
+UNION ALL
+SELECT product_name, '2023' AS year, year_2023 AS sales_amount FROM pivoted_sales
+UNION ALL
+SELECT product_name, '2024' AS year, year_2024 AS sales_amount FROM pivoted_sales
+ORDER BY product_name, year;
+ product_name | year | sales_amount 
+--------------+------+--------------
+ Laptop       | 2022 |     15000.00
+ Laptop       | 2023 |     20000.00
+ Laptop       | 2024 |     18000.00
+ Phone        | 2022 |     25000.00
+ Phone        | 2023 |     27000.00
+ Phone        | 2024 |     29000.00
+ Tablet       | 2022 |     12000.00
+ Tablet       | 2023 |     16000.00
+ Tablet       | 2024 |     19000.00
+(9 rows)
+
+postgres=# DROP TABLE IF EXISTS employees;
+
+CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    department VARCHAR(50),
+    salary NUMERIC(10,2),
+    tenure INT   -- стаж в годах
+);
+
+INSERT INTO employees (first_name, last_name, department, salary, tenure) VALUES
+('Alice',  'Johnson', 'IT',       2200.00, 6),
+('Bob',    'Smith',   'IT',       1800.00, 3),
+('Charlie','Brown',   'IT',       1500.00, 8),
+('Diana',  'Prince',  'Sales',    2000.00, 7),
+('Ethan',  'Hunt',    'Sales',    1900.00, 2),
+('Fiona',  'Davis',   'Sales',    1600.00, 10),
+('George', 'Miller',  'HR',       1700.00, 4),
+('Hannah', 'Wilson',  'HR',       1650.00, 9);
+DROP TABLE
+CREATE TABLE
+INSERT 0 8
+postgres=# SELECT
+    employee_id,
+    first_name,
+    department,
+    salary,
+    SUM(salary) OVER (PARTITION BY department) AS total_dept_salary,
+    AVG(salary) FILTER (WHERE tenure > 5) OVER () AS avg_salary_senior
+FROM employees
+ORDER BY department, employee_id;
+ employee_id | first_name | department | salary  | total_dept_salary |   avg_salary_senior   
+-------------+------------+------------+---------+-------------------+-----------------------
+           7 | George     | HR         | 1700.00 |           3350.00 | 1790.0000000000000000
+           8 | Hannah     | HR         | 1650.00 |           3350.00 | 1790.0000000000000000
+           1 | Alice      | IT         | 2200.00 |           5500.00 | 1790.0000000000000000
+           2 | Bob        | IT         | 1800.00 |           5500.00 | 1790.0000000000000000
+           3 | Charlie    | IT         | 1500.00 |           5500.00 | 1790.0000000000000000
+           4 | Diana      | Sales      | 2000.00 |           5500.00 | 1790.0000000000000000
+           5 | Ethan      | Sales      | 1900.00 |           5500.00 | 1790.0000000000000000
+           6 | Fiona      | Sales      | 1600.00 |           5500.00 | 1790.0000000000000000
+(8 rows)
+
+postgres=# DROP TABLE IF EXISTS orders;
+
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100),
+    status VARCHAR(20)
+);
+
+INSERT INTO orders (product_name, status) VALUES
+('Laptop', 'High Priority'),
+('Mouse', 'Low Priority'),
+('Keyboard', 'Medium Priority'),
+('Monitor', 'High Priority'),
+('Webcam', 'Low Priority'),
+('Printer', 'Medium Priority');
+DROP TABLE
+CREATE TABLE
+INSERT 0 6
+postgres=# SELECT product_name, status
+FROM orders
+ORDER BY
+    CASE status
+        WHEN 'High Priority' THEN 1
+        WHEN 'Medium Priority' THEN 2
+        WHEN 'Low Priority' THEN 3
+        ELSE 4
+    END;
+ product_name |     status      
+--------------+-----------------
+ Laptop       | High Priority
+ Monitor      | High Priority
+ Keyboard     | Medium Priority
+ Printer      | Medium Priority
+ Mouse        | Low Priority
+ Webcam       | Low Priority
+(6 rows)
+
+postgres=# 

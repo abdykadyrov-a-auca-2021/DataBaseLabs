@@ -1,0 +1,517 @@
+postgres=# DROP TABLE IF EXISTS accounts CASCADE;
+CREATE TABLE accounts (
+  account_id  SERIAL PRIMARY KEY,
+  owner_name  TEXT NOT NULL,
+  balance     NUMERIC(12,2) NOT NULL CHECK (balance >= 0)
+);
+
+INSERT INTO accounts (owner_name, balance) VALUES
+('Alice', 2000.00), ('Bob', 500.00), ('Carol', 1500.00);
+NOTICE:  table "accounts" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+INSERT 0 3
+postgres=# DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
+CREATE TABLE customers (
+  customer_id SERIAL PRIMARY KEY,
+  name        TEXT NOT NULL,
+  email       TEXT UNIQUE
+);
+CREATE TABLE orders (
+  order_id    SERIAL PRIMARY KEY,
+  customer_id INT NOT NULL REFERENCES customers(customer_id),
+  total       NUMERIC(12,2) NOT NULL DEFAULT 0
+);
+CREATE TABLE order_items (
+  order_item_id SERIAL PRIMARY KEY,
+  order_id      INT NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
+  product_id    INT NOT NULL,
+  quantity      INT NOT NULL CHECK (quantity > 0)
+);
+NOTICE:  table "order_items" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+postgres=# 
+postgres=# -- 3. Склад (для примеров с инвентарём)
+DROP TABLE IF EXISTS inventory CASCADE;
+CREATE TABLE inventory (
+  product_id INT PRIMARY KEY,
+  stock      INT NOT NULL CHECK (stock >= 0)
+);
+INSERT INTO inventory (product_id, stock) VALUES
+(101, 10), (102, 5), (103, 0);
+
+-- 4. Товары (для SAVEPOINT’ов)
+DROP TABLE IF EXISTS products CASCADE;
+CREATE TABLE products (
+  product_id SERIAL PRIMARY KEY,
+  name       TEXT NOT NULL,
+  price      NUMERIC(10,2) NOT NULL CHECK (price >= 0)
+);
+
+-- 5. Логи/аудит/пользователи (для best practices)
+DROP TABLE IF EXISTS user_preferences CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS audit_log CASCADE;
+DROP TABLE IF EXISTS logs CASCADE;
+
+CREATE TABLE users (
+  user_id  SERIAL PRIMARY KEY,
+  name     TEXT NOT NULL,
+  email    TEXT
+);
+CREATE TABLE user_preferences (
+  pref_id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  theme   TEXT
+);
+CREATE TABLE audit_log (
+  audit_id  SERIAL PRIMARY KEY,
+  action    TEXT,
+  ts        TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE TABLE logs (
+  log_id  SERIAL PRIMARY KEY,
+  message TEXT NOT NULL,
+  ts      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+NOTICE:  table "inventory" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+INSERT 0 3
+DROP TABLE
+CREATE TABLE
+NOTICE:  table "user_preferences" does not exist, skipping
+DROP TABLE
+NOTICE:  drop cascades to constraint user_profiles_user_id_fkey on table user_profiles
+DROP TABLE
+NOTICE:  table "audit_log" does not exist, skipping
+DROP TABLE
+NOTICE:  table "logs" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+postgres=# BEGIN;
+UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;
+UPDATE accounts SET balance = balance + 100 WHERE account_id = 2;
+COMMIT;
+
+SELECT * FROM accounts ORDER BY account_id;
+BEGIN
+UPDATE 1
+UPDATE 1
+COMMIT
+ account_id | owner_name | balance 
+------------+------------+---------
+          1 | Alice      | 1900.00
+          2 | Bob        |  600.00
+          3 | Carol      | 1500.00
+(3 rows)
+
+postgres=# BEGIN;
+-- Смотрим баланс
+SELECT balance FROM accounts WHERE account_id = 2;
+
+-- Если понимаем, что средств мало, просто делаем ROLLBACK:
+ROLLBACK;
+
+-- Ничего не изменилось
+SELECT * FROM accounts ORDER BY account_id;
+BEGIN
+ balance 
+---------
+  600.00
+(1 row)
+
+ROLLBACK
+ account_id | owner_name | balance 
+------------+------------+---------
+          1 | Alice      | 1900.00
+          2 | Bob        |  600.00
+          3 | Carol      | 1500.00
+(3 rows)
+
+postgres=# INSERT INTO customers (name, email) VALUES ('John Doe', 'john@email.com');
+INSERT 0 1
+postgres=# BEGIN;
+BEGIN
+postgres=*#  INSERT INTO orders (customer_id, total) VALUES (currval('customers_customer_id_seq'), 250.00);
+INSERT 0 1
+postgres=*#  INSERT INTO order_items (order_id, product_id, quantity)
+  VALUES (currval('orders_order_id_seq'), 101, 2);
+INSERT 0 1
+postgres=*#   UPDATE inventory SET stock = stock - 2 WHERE product_id = 101;
+UPDATE 1
+postgres=*# COMMIT;
+COMMIT
+postgres=# SELECT * FROM orders ORDER BY order_id;
+SELECT * FROM order_items ORDER BY order_item_id;
+SELECT * FROM inventory ORDER BY product_id;
+ order_id | customer_id | total  
+----------+-------------+--------
+        1 |           1 | 250.00
+(1 row)
+
+ order_item_id | order_id | product_id | quantity 
+---------------+----------+------------+----------
+             1 |        1 |        101 |        2
+(1 row)
+
+ product_id | stock 
+------------+-------
+        101 |     8
+        102 |     5
+        103 |     0
+(3 rows)
+
+postgres=# BEGIN;
+  INSERT INTO products (name, price) VALUES ('Laptop',   999.99);
+  SAVEPOINT sp1;
+
+  INSERT INTO products (name, price) VALUES ('Mouse',     25.99);
+  SAVEPOINT sp2;
+
+  -- Ошибочная вставка (бизнес-правило: цена не может быть отрицательной)
+  INSERT INTO products (name, price) VALUES ('Invalid Product', -50.00);
+BEGIN
+INSERT 0 1
+SAVEPOINT
+INSERT 0 1
+SAVEPOINT
+ERROR:  new row for relation "products" violates check constraint "products_price_check"
+DETAIL:  Failing row contains (3, Invalid Product, -50.00).
+postgres=!#  ROLLBACK TO SAVEPOINT sp2;
+ROLLBACK
+postgres=*#   INSERT INTO products (name, price) VALUES ('Keyboard',  79.99);
+COMMIT;
+
+SELECT * FROM products ORDER BY product_id;
+INSERT 0 1
+COMMIT
+ product_id |   name   | price  
+------------+----------+--------
+          1 | Laptop   | 999.99
+          2 | Mouse    |  25.99
+          4 | Keyboard |  79.99
+(3 rows)
+
+postgres=# BEGIN;
+  INSERT INTO logs (message) VALUES ('Starting process');
+  SAVEPOINT process_start;
+BEGIN
+INSERT 0 1
+SAVEPOINT
+postgres=*#  INSERT INTO logs (message) VALUES ('Process completed');
+INSERT 0 1
+postgres=*#   RELEASE SAVEPOINT process_start;
+COMMIT;
+RELEASE
+COMMIT
+postgres=# 
+SELECT * FROM logs ORDER BY log_id;
+ log_id |      message      |             ts             
+--------+-------------------+----------------------------
+      1 | Starting process  | 2025-10-23 17:56:35.584403
+      2 | Process completed | 2025-10-23 17:56:35.584403
+(2 rows)
+
+postgres=# BEGIN;
+  INSERT INTO audit_log (action) VALUES ('user_creation');
+  INSERT INTO users (name, email) VALUES ('Jane Roe', 'jane@example.com');
+  INSERT INTO user_preferences (user_id, theme)
+  VALUES (currval('users_user_id_seq'), 'dark');
+COMMIT;
+
+SELECT u.user_id, u.name, p.theme
+FROM users u LEFT JOIN user_preferences p USING (user_id)
+ORDER BY u.user_id;
+BEGIN
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+COMMIT
+ user_id |   name   | theme 
+---------+----------+-------
+       1 | Jane Roe | dark
+(1 row)
+
+postgres=# ELECT 
+  blocked_locks.pid        AS blocked_pid,
+  blocked_activity.usename AS blocked_user,
+  blocking_locks.pid       AS blocking_pid,
+  blocking_activity.usename AS blocking_user,
+  blocked_activity.query   AS blocked_statement
+FROM pg_catalog.pg_locks blocked_locks
+JOIN pg_catalog.pg_stat_activity blocked_activity 
+  ON blocked_activity.pid = blocked_locks.pid
+JOIN pg_catalog.pg_locks blocking_locks 
+  ON blocking_locks.locktype = blocked_locks.locktype
+WHERE NOT blocked_locks.granted;
+ERROR:  syntax error at or near "ELECT"
+LINE 1: ELECT 
+        ^
+postgres=# SELECT 
+  blocked_locks.pid        AS blocked_pid,
+  blocked_activity.usename AS blocked_user,
+  blocking_locks.pid       AS blocking_pid,
+  blocking_activity.usename AS blocking_user,
+  blocked_activity.query   AS blocked_statement
+FROM pg_catalog.pg_locks blocked_locks
+JOIN pg_catalog.pg_stat_activity blocked_activity 
+  ON blocked_activity.pid = blocked_locks.pid
+JOIN pg_catalog.pg_locks blocking_locks 
+  ON blocking_locks.locktype = blocked_locks.locktype
+WHERE NOT blocked_locks.granted;
+ERROR:  missing FROM-clause entry for table "blocking_activity"
+LINE 5:   blocking_activity.usename AS blocking_user,
+          ^
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# 
+postgres=# DROP TABLE IF EXISTS employees;
+CREATE TABLE employees (
+  employee_id  SERIAL PRIMARY KEY,
+  first_name   TEXT NOT NULL,
+  last_name    TEXT NOT NULL,
+  department   TEXT NOT NULL,
+  salary       NUMERIC(10,2) NOT NULL,
+  hire_date    DATE NOT NULL
+);
+DROP TABLE
+CREATE TABLE
+postgres=# INSERT INTO employees (first_name, last_name, department, salary, hire_date) VALUES
+('Alice','Johnson','IT',       2200.00,'2023-01-15'),
+('Bob','Smith','IT',           1800.00,'2023-03-02'),
+('Cathy','Brown','Sales',      2000.00,'2022-11-10'),
+('Diana','Prince','Sales',     1900.00,'2024-02-01'),
+('Ethan','Hunt','HR',          1700.00,'2021-09-20'),
+('Fiona','Davis','Marketing',  1600.00,'2022-06-05');
+INSERT 0 6
+postgres=# COPY employees
+TO '/tmp/employees.csv'
+WITH CSV HEADER; 
+COPY 6
+postgres=# COPY (
+  SELECT employee_id, first_name, last_name, salary
+  FROM employees
+  WHERE department = 'IT'
+  ORDER BY salary DESC
+) TO '/tmp/it_employees.csv'
+WITH CSV HEADER;
+COPY 2
+postgres=# DROP TABLE IF EXISTS employees_import;
+CREATE TABLE employees_import (LIKE employees INCLUDING ALL);
+NOTICE:  table "employees_import" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+postgres=# COPY employees_import
+FROM '/tmp/employees.csv'
+WITH CSV HEADER;
+COPY 6
+postgres=# SELECT COUNT(*) AS imported, MIN(hire_date), MAX(hire_date)
+FROM employees_import;
+ imported |    min     |    max     
+----------+------------+------------
+        6 | 2021-09-20 | 2024-02-01
+(1 row)
+
+postgres=# DROP TABLE IF EXISTS products;
+CREATE TABLE products (
+    product_id   SERIAL PRIMARY KEY,
+    product_name TEXT,
+    category     TEXT,
+    price        NUMERIC(10,2),
+    stock        INT
+);
+
+INSERT INTO products (product_name, category, price, stock) VALUES
+('Laptop',   'Electronics', 1200.00, 10),
+('Mouse',    'Electronics',   25.50, 200),
+('Desk',     'Furniture',    300.00, 15),
+('Chair',    'Furniture',    150.00, 40);
+DROP TABLE
+CREATE TABLE
+INSERT 0 4
+postgres=# COPY products TO '/tmp/products.csv' WITH CSV HEADER;
+COPY 4
+postgres=# 
+postgres=# 
+postgres=# COPY products TO '/tmp/products_semicolon.csv'
+WITH CSV HEADER DELIMITER ';' QUOTE '"';
+COPY 4
+postgres=# DROP TABLE IF EXISTS orders;
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer TEXT,
+    order_date DATE,
+    amount NUMERIC(10,2)
+);
+
+INSERT INTO orders (customer, order_date, amount) VALUES
+('Alice', '2024-02-10', 500.00),
+('Bob', '2024-03-05', 750.00);
+ERROR:  cannot drop table orders because other objects depend on it
+DETAIL:  constraint order_items_order_id_fkey on table order_items depends on table orders
+HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+ERROR:  relation "orders" already exists
+ERROR:  column "customer" of relation "orders" does not exist
+LINE 1: INSERT INTO orders (customer, order_date, amount) VALUES
+
+                            ^
+
+
+
+
+
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# CREATE DATABASE backup_lab;
+CREATE DATABASE
+postgres=# \c backup_lab
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+You are now connected to database "backup_lab" as user "azamatabdykadyrov".
+backup_lab=# CREATE TABLE employees (
+    emp_id SERIAL PRIMARY KEY,
+    first_name TEXT,
+    last_name TEXT,
+    department TEXT,
+    salary NUMERIC(10,2)
+);
+
+CREATE TABLE departments (
+    dept_id SERIAL PRIMARY KEY,
+    dept_name TEXT
+);
+CREATE TABLE
+CREATE TABLE
+backup_lab=# INSERT INTO departments (dept_name) VALUES
+('IT'), ('Sales'), ('HR');
+
+INSERT INTO employees (first_name, last_name, department, salary) VALUES
+('Alice', 'Johnson', 'IT', 2200.00),
+('Bob', 'Smith', 'Sales', 1800.00),
+('Charlie', 'Brown', 'HR', 1700.00),
+('Diana', 'Prince', 'IT', 2500.00);
+INSERT 0 3
+INSERT 0 4
+backup_lab=# 
+backup_lab=# \c restore_lab
+\dt
+SELECT * FROM employees;
+SELECT * FROM departments;
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+You are now connected to database "restore_lab" as user "azamatabdykadyrov".
+Did not find any relation named "SELECT".
+\dt: extra argument "*" ignored
+\dt: extra argument "FROM" ignored
+\dt: extra argument "employees;" ignored
+\dt: extra argument "SELECT" ignored
+\dt: extra argument "*" ignored
+\dt: extra argument "FROM" ignored
+\dt: extra argument "departments;" ignored
+restore_lab=# 
+
+
+
+
+
+
+azamatabdykadyrov@MacBook-Air-Azamat ~ % pg_dump -h localhost -U azamatabdykadyrov -d backup_lab > backup_lab.sql
+
+Пароль: 
+azamatabdykadyrov@MacBook-Air-Azamat ~ % ls
+Applications		Library			TimelySkills
+CLionProjects		Movies			backup_lab.sql
+DataGripProjects	Music			databases
+Desktop			Pictures		mssql
+Documents		Postman
+Downloads		Public
+azamatabdykadyrov@MacBook-Air-Azamat ~ % pg_dump -h localhost -U azamatabdykadyrov -d backup_lab -Fc > backup_lab.dump
+
+Пароль: 
+azamatabdykadyrov@MacBook-Air-Azamat ~ % ls
+Applications		Library			TimelySkills
+CLionProjects		Movies			backup_lab.dump
+DataGripProjects	Music			backup_lab.sql
+Desktop			Pictures		databases
+Documents		Postman			mssql
+Downloads		Public
+azamatabdykadyrov@MacBook-Air-Azamat ~ % ls -lh backup_lab.*
+
+-rw-r--r--  1 azamatabdykadyrov  staff   5.0K Oct 23 18:23 backup_lab.dump
+-rw-r--r--  1 azamatabdykadyrov  staff   3.8K Oct 23 18:22 backup_lab.sql
+azamatabdykadyrov@MacBook-Air-Azamat ~ % createdb -h localhost -U azamatabdykadyrov restore_lab
+
+Пароль: 
+azamatabdykadyrov@MacBook-Air-Azamat ~ % psql -h localhost -U azamatabdykadyrov -d restore_lab -f backup_lab.sql
+
+Пароль пользователя azamatabdykadyrov: 
+SET
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 строка)
+
+SET
+SET
+SET
+SET
+SET
+SET
+CREATE TABLE
+ALTER TABLE
+CREATE SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+CREATE TABLE
+ALTER TABLE
+CREATE SEQUENCE
+ALTER SEQUENCE
+ALTER SEQUENCE
+ALTER TABLE
+ALTER TABLE
+COPY 3
+COPY 4
+ setval 
+--------
+      3
+(1 строка)
+
+ setval 
+--------
+      4
+(1 строка)
+
+ALTER TABLE
+ALTER TABLE
+azamatabdykadyrov@MacBook-Air-Azamat ~ % 
+
