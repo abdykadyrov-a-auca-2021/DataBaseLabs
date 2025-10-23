@@ -1,0 +1,482 @@
+postgres=# -- Customers table
+CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+-- Orders table
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(customer_id),
+    order_date DATE,
+    total_amount DECIMAL(10,2)
+);
+ERROR:  relation "customers" already exists
+ERROR:  relation "orders" already exists
+postgres=# DROP TABLE customers cascade ;
+DROP TABLE
+postgres=# DROP TABLE orders cascade ;
+DROP TABLE
+postgres=# -- Customers table
+CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+-- Orders table
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(customer_id),
+    order_date DATE,
+    total_amount DECIMAL(10,2)
+);
+CREATE TABLE
+CREATE TABLE
+postgres=# INSERT INTO customers (name, email) VALUES
+('Alice Johnson', 'alice@example.com'),
+('Bob Smith', 'bob@example.com'),
+('Charlie Brown', 'charlie@example.com'),
+('Diana Prince', 'diana@example.com'),
+('Ethan Hunt', 'ethan@example.com'),
+('Fiona Davis', 'fiona@example.com'),
+('George Miller', 'george@example.com');
+INSERT 0 7
+postgres=# INSERT INTO orders (customer_id, order_date, total_amount) VALUES
+(1, '2025-01-05', 250.00),
+(1, '2025-02-10', 120.00),
+(2, '2025-01-15', 560.00),
+(2, '2025-03-02', 340.00),
+(3, '2025-02-20', 150.00),
+(3, '2025-03-11', 180.00),
+(4, '2025-01-25', 890.00),
+(4, '2025-04-01', 720.00),
+(5, '2025-02-12', 430.00),
+(5, '2025-03-08', 210.00),
+(6, '2025-02-17', 300.00),
+(7, '2025-03-15', 670.00),
+(7, '2025-04-05', 560.00);
+INSERT 0 13
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id;
+     name      |        email        | order_date | total_amount 
+---------------+---------------------+------------+--------------
+ Alice Johnson | alice@example.com   | 2025-01-05 |       250.00
+ Alice Johnson | alice@example.com   | 2025-02-10 |       120.00
+ Bob Smith     | bob@example.com     | 2025-01-15 |       560.00
+ Bob Smith     | bob@example.com     | 2025-03-02 |       340.00
+ Charlie Brown | charlie@example.com | 2025-02-20 |       150.00
+ Charlie Brown | charlie@example.com | 2025-03-11 |       180.00
+ Diana Prince  | diana@example.com   | 2025-01-25 |       890.00
+ Diana Prince  | diana@example.com   | 2025-04-01 |       720.00
+ Ethan Hunt    | ethan@example.com   | 2025-02-12 |       430.00
+ Ethan Hunt    | ethan@example.com   | 2025-03-08 |       210.00
+ Fiona Davis   | fiona@example.com   | 2025-02-17 |       300.00
+ George Miller | george@example.com  | 2025-03-15 |       670.00
+ George Miller | george@example.com  | 2025-04-05 |       560.00
+(13 rows)
+
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id;
+     name      |        email        | order_date | total_amount 
+---------------+---------------------+------------+--------------
+ Alice Johnson | alice@example.com   | 2025-01-05 |       250.00
+ Alice Johnson | alice@example.com   | 2025-02-10 |       120.00
+ Bob Smith     | bob@example.com     | 2025-01-15 |       560.00
+ Bob Smith     | bob@example.com     | 2025-03-02 |       340.00
+ Charlie Brown | charlie@example.com | 2025-02-20 |       150.00
+ Charlie Brown | charlie@example.com | 2025-03-11 |       180.00
+ Diana Prince  | diana@example.com   | 2025-01-25 |       890.00
+ Diana Prince  | diana@example.com   | 2025-04-01 |       720.00
+ Ethan Hunt    | ethan@example.com   | 2025-02-12 |       430.00
+ Ethan Hunt    | ethan@example.com   | 2025-03-08 |       210.00
+ Fiona Davis   | fiona@example.com   | 2025-02-17 |       300.00
+ George Miller | george@example.com  | 2025-03-15 |       670.00
+ George Miller | george@example.com  | 2025-04-05 |       560.00
+(13 rows)
+
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+RIGHT JOIN orders o ON c.customer_id = o.customer_id;
+     name      |        email        | order_date | total_amount 
+---------------+---------------------+------------+--------------
+ Alice Johnson | alice@example.com   | 2025-01-05 |       250.00
+ Alice Johnson | alice@example.com   | 2025-02-10 |       120.00
+ Bob Smith     | bob@example.com     | 2025-01-15 |       560.00
+ Bob Smith     | bob@example.com     | 2025-03-02 |       340.00
+ Charlie Brown | charlie@example.com | 2025-02-20 |       150.00
+ Charlie Brown | charlie@example.com | 2025-03-11 |       180.00
+ Diana Prince  | diana@example.com   | 2025-01-25 |       890.00
+ Diana Prince  | diana@example.com   | 2025-04-01 |       720.00
+ Ethan Hunt    | ethan@example.com   | 2025-02-12 |       430.00
+ Ethan Hunt    | ethan@example.com   | 2025-03-08 |       210.00
+ Fiona Davis   | fiona@example.com   | 2025-02-17 |       300.00
+ George Miller | george@example.com  | 2025-03-15 |       670.00
+ George Miller | george@example.com  | 2025-04-05 |       560.00
+(13 rows)
+
+postgres=# DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS customers;
+
+-- Таблица клиентов
+CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+-- Таблица заказов
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER,
+    order_date DATE,
+    total_amount DECIMAL(10,2)
+);
+DROP TABLE
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+postgres=# INSERT INTO customers (name, email) VALUES
+('Alice Johnson', 'alice@example.com'),
+('Bob Smith', 'bob@example.com'),
+('Charlie Brown', 'charlie@example.com'),
+('Diana Prince', 'diana@example.com'),
+('Ethan Hunt', 'ethan@example.com'),      -- будет без заказов
+('Fiona Davis', 'fiona@example.com'),     -- будет без заказов
+('George Miller', 'george@example.com');  -- будет без заказов
+INSERT 0 7
+postgres=# INSERT INTO orders (customer_id, order_date, total_amount) VALUES
+(1, '2025-01-05', 250.00),
+(1, '2025-02-10', 120.00),
+(2, '2025-03-02', 340.00),
+(3, '2025-01-20', 560.00),
+(3, '2025-03-15', 150.00),
+(4, '2025-02-25', 720.00),
+(10, '2025-04-05', 999.00),  -- заказ без клиента (несуществующий ID)
+(11, '2025-05-10', 875.00);  -- ещё один заказ без клиента
+INSERT 0 8
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+RIGHT JOIN orders o ON c.customer_id = o.customer_id;
+     name      |        email        | order_date | total_amount 
+---------------+---------------------+------------+--------------
+ Alice Johnson | alice@example.com   | 2025-01-05 |       250.00
+ Alice Johnson | alice@example.com   | 2025-02-10 |       120.00
+ Bob Smith     | bob@example.com     | 2025-03-02 |       340.00
+ Charlie Brown | charlie@example.com | 2025-01-20 |       560.00
+ Charlie Brown | charlie@example.com | 2025-03-15 |       150.00
+ Diana Prince  | diana@example.com   | 2025-02-25 |       720.00
+               |                     | 2025-04-05 |       999.00
+               |                     | 2025-05-10 |       875.00
+(8 rows)
+
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id;
+     name      |        email        | order_date | total_amount 
+---------------+---------------------+------------+--------------
+ Alice Johnson | alice@example.com   | 2025-01-05 |       250.00
+ Alice Johnson | alice@example.com   | 2025-02-10 |       120.00
+ Bob Smith     | bob@example.com     | 2025-03-02 |       340.00
+ Charlie Brown | charlie@example.com | 2025-01-20 |       560.00
+ Charlie Brown | charlie@example.com | 2025-03-15 |       150.00
+ Diana Prince  | diana@example.com   | 2025-02-25 |       720.00
+ Ethan Hunt    | ethan@example.com   |            |             
+ Fiona Davis   | fiona@example.com   |            |             
+ George Miller | george@example.com  |            |             
+(9 rows)
+
+postgres=# SELECT columns
+FROM table1
+FULL OUTER JOIN table2 ON table1.column = table2.column;
+ERROR:  relation "table1" does not exist
+LINE 2: FROM table1
+             ^
+postgres=# SELECT columns
+FROM table1
+FULL OUTER JOIN table2 ON table1.column = table2.column;
+ERROR:  relation "table1" does not exist
+LINE 2: FROM table1
+             ^
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+FULL OUTER JOIN orders o ON c.customer_id = o.customer_id;
+     name      |        email        | order_date | total_amount 
+---------------+---------------------+------------+--------------
+ Alice Johnson | alice@example.com   | 2025-01-05 |       250.00
+ Alice Johnson | alice@example.com   | 2025-02-10 |       120.00
+ Bob Smith     | bob@example.com     | 2025-03-02 |       340.00
+ Charlie Brown | charlie@example.com | 2025-01-20 |       560.00
+ Charlie Brown | charlie@example.com | 2025-03-15 |       150.00
+ Diana Prince  | diana@example.com   | 2025-02-25 |       720.00
+               |                     | 2025-04-05 |       999.00
+               |                     | 2025-05-10 |       875.00
+ Ethan Hunt    | ethan@example.com   |            |             
+ Fiona Davis   | fiona@example.com   |            |             
+ George Miller | george@example.com  |            |             
+(11 rows)
+
+postgres=# SELECT c.name, p.product_name
+FROM customers c
+CROSS JOIN products p;
+ERROR:  column p.product_name does not exist
+LINE 1: SELECT c.name, p.product_name
+                       ^
+postgres=# DROP TABLE IF EXISTS products cascade;
+DROP TABLE
+postgres=# CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100),
+    price DECIMAL(10,2)
+);
+CREATE TABLE
+postgres=# INSERT INTO products (product_name, price) VALUES
+('Laptop', 1200.00),
+('Smartphone', 800.00),
+('Headphones', 150.00);
+INSERT 0 3
+postgres=# SELECT c.name, p.product_name
+FROM customers c
+CROSS JOIN products p;
+     name      | product_name 
+---------------+--------------
+ Alice Johnson | Laptop
+ Bob Smith     | Laptop
+ Charlie Brown | Laptop
+ Diana Prince  | Laptop
+ Ethan Hunt    | Laptop
+ Fiona Davis   | Laptop
+ George Miller | Laptop
+ Alice Johnson | Smartphone
+ Bob Smith     | Smartphone
+ Charlie Brown | Smartphone
+ Diana Prince  | Smartphone
+ Ethan Hunt    | Smartphone
+ Fiona Davis   | Smartphone
+ George Miller | Smartphone
+ Alice Johnson | Headphones
+ Bob Smith     | Headphones
+ Charlie Brown | Headphones
+ Diana Prince  | Headphones
+ Ethan Hunt    | Headphones
+ Fiona Davis   | Headphones
+ George Miller | Headphones
+(21 rows)
+
+postgres=# SELECT e1.name AS employee, e2.name AS manager
+FROM employees e1
+LEFT JOIN employees e2 ON e1.manager_id = e2.employee_id;
+ERROR:  column e1.manager_id does not exist
+LINE 3: LEFT JOIN employees e2 ON e1.manager_id = e2.employee_id;
+                                  ^
+postgres=# DROP TABLE IF EXISTS employees;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    manager_id INTEGER REFERENCES employees(employee_id)
+);
+CREATE TABLE
+postgres=# INSERT INTO employees (name, manager_id) VALUES
+('Alice Johnson', NULL),      -- Генеральный директор (нет менеджера)
+('Bob Smith', 1),             -- Подчинённый Алисы
+('Charlie Brown', 1),         -- Подчинённый Алисы
+('Diana Prince', 2),          -- Подчинённый Боба
+('Ethan Hunt', 2),            -- Подчинённый Боба
+('Fiona Davis', 3);           -- Подчинённый Чарли
+INSERT 0 6
+postgres=# SELECT e1.name AS employee, e2.name AS manager
+FROM employees e1
+LEFT JOIN employees e2 ON e1.manager_id = e2.employee_id;
+   employee    |    manager    
+---------------+---------------
+ Alice Johnson | 
+ Bob Smith     | Alice Johnson
+ Charlie Brown | Alice Johnson
+ Diana Prince  | Bob Smith
+ Ethan Hunt    | Bob Smith
+ Fiona Davis   | Charlie Brown
+(6 rows)
+
+postgres=# DROP TABLE IF EXISTS user_profiles;
+DROP TABLE IF EXISTS users;
+DROP TABLE
+DROP TABLE
+postgres=# CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100)
+);
+CREATE TABLE
+postgres=# CREATE TABLE user_profiles (
+    profile_id SERIAL PRIMARY KEY,
+    user_id INTEGER UNIQUE REFERENCES users(user_id),
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    phone VARCHAR(20)
+);
+CREATE TABLE
+postgres=# INSERT INTO users (username, email) VALUES
+('alice', 'alice@example.com'),
+('bob', 'bob@example.com'),
+('charlie', 'charlie@example.com'),
+('diana', 'diana@example.com');
+INSERT 0 4
+postgres=# INSERT INTO user_profiles (user_id, first_name, last_name, phone) VALUES
+(1, 'Alice', 'Johnson', '+1-202-555-0147'),
+(2, 'Bob', 'Smith', '+1-202-555-0189'),
+(4, 'Diana', 'Prince', '+1-202-555-0110');
+INSERT 0 3
+postgres=# -- Joining user profiles (one-to-one)
+SELECT u.username, up.first_name, up.last_name, up.phone
+FROM users u
+LEFT JOIN user_profiles up ON u.user_id = up.user_id;
+ username | first_name | last_name |      phone      
+----------+------------+-----------+-----------------
+ alice    | Alice      | Johnson   | +1-202-555-0147
+ bob      | Bob        | Smith     | +1-202-555-0189
+ diana    | Diana      | Prince    | +1-202-555-0110
+ charlie  |            |           | 
+(4 rows)
+
+postgres=# DROP TABLE IF EXISTS books;
+DROP TABLE IF EXISTS authors;
+NOTICE:  table "books" does not exist, skipping
+DROP TABLE
+NOTICE:  table "authors" does not exist, skipping
+DROP TABLE
+postgres=# CREATE TABLE authors (
+    author_id SERIAL PRIMARY KEY,
+    author_name VARCHAR(100) NOT NULL
+);
+CREATE TABLE
+postgres=# 
+postgres=# CREATE TABLE books (
+    book_id SERIAL PRIMARY KEY,
+    author_id INTEGER REFERENCES authors(author_id),
+    title VARCHAR(150),
+    publication_year INT
+);
+CREATE TABLE
+postgres=# INSERT INTO authors (author_name) VALUES
+('Leo Tolstoy'),
+('Fyodor Dostoevsky'),
+('Jane Austen'),
+('Ernest Hemingway'),
+('George Orwell');
+INSERT 0 5
+postgres=# INSERT INTO books (author_id, title, publication_year) VALUES
+(1, 'War and Peace', 1869),
+(1, 'Anna Karenina', 1877),
+(2, 'Crime and Punishment', 1866),
+(2, 'The Idiot', 1869),
+(2, 'The Brothers Karamazov', 1880),
+(3, 'Pride and Prejudice', 1813),
+(3, 'Emma', 1815),
+(4, 'The Old Man and the Sea', 1952),
+(4, 'A Farewell to Arms', 1929),
+(5, '1984', 1949),
+(5, 'Animal Farm', 1945);
+INSERT 0 11
+postgres=# SELECT 
+    a.author_name, 
+    b.title, 
+    b.publication_year
+FROM authors a
+INNER JOIN books b 
+    ON a.author_id = b.author_id
+ORDER BY a.author_name, b.publication_year;
+    author_name    |          title          | publication_year 
+-------------------+-------------------------+------------------
+ Ernest Hemingway  | A Farewell to Arms      |             1929
+ Ernest Hemingway  | The Old Man and the Sea |             1952
+ Fyodor Dostoevsky | Crime and Punishment    |             1866
+ Fyodor Dostoevsky | The Idiot               |             1869
+ Fyodor Dostoevsky | The Brothers Karamazov  |             1880
+ George Orwell     | Animal Farm             |             1945
+ George Orwell     | 1984                    |             1949
+ Jane Austen       | Pride and Prejudice     |             1813
+ Jane Austen       | Emma                    |             1815
+ Leo Tolstoy       | War and Peace           |             1869
+ Leo Tolstoy       | Anna Karenina           |             1877
+(11 rows)
+
+postgres=# DROP TABLE IF EXISTS enrollments;
+DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS courses;
+NOTICE:  table "enrollments" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+postgres=# -- Таблица студентов
+CREATE TABLE students (
+    student_id SERIAL PRIMARY KEY,
+    student_name VARCHAR(100) NOT NULL
+);
+
+-- Таблица курсов
+CREATE TABLE courses (
+    course_id SERIAL PRIMARY KEY,
+    course_name VARCHAR(100) NOT NULL
+);
+
+-- Таблица записей (связь многие-ко-многим)
+CREATE TABLE enrollments (
+    enrollment_id SERIAL PRIMARY KEY,
+    student_id INT REFERENCES students(student_id),
+    course_id INT REFERENCES courses(course_id),
+    enrollment_date DATE,
+    grade DECIMAL(3,1)  -- можно NULL, если курс ещё не завершён
+);
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+postgres=# -- Студенты
+INSERT INTO students (student_name) VALUES
+('Alice Johnson'),
+('Bob Smith'),
+('Charlie Brown'),
+('Diana Prince');
+
+-- Курсы
+INSERT INTO courses (course_name) VALUES
+('Database Systems'),
+('Computer Networks'),
+('Operating Systems'),
+('Web Development');
+
+-- Записи студентов на курсы
+INSERT INTO enrollments (student_id, course_id, enrollment_date, grade) VALUES
+(1, 1, '2025-01-15', 95.0),
+(1, 2, '2025-02-01', 88.5),
+(2, 1, '2025-01-20', 78.0),
+(2, 3, '2025-02-10', NULL),  -- курс ещё не завершён
+(3, 2, '2025-01-18', 91.0),
+(3, 4, '2025-02-12', 85.5),
+(4, 4, '2025-01-22', NULL);  -- курс ещё в процессе
+INSERT 0 4
+INSERT 0 4
+INSERT 0 7
+postgres=# SELECT 
+    s.student_name, 
+    c.course_name, 
+    e.enrollment_date, 
+    e.grade
+FROM students s
+INNER JOIN enrollments e ON s.student_id = e.student_id
+INNER JOIN courses c ON e.course_id = c.course_id
+WHERE e.grade IS NOT NULL
+ORDER BY s.student_name, c.course_name;
+ student_name  |    course_name    | enrollment_date | grade 
+---------------+-------------------+-----------------+-------
+ Alice Johnson | Computer Networks | 2025-02-01      |  88.5
+ Alice Johnson | Database Systems  | 2025-01-15      |  95.0
+ Bob Smith     | Database Systems  | 2025-01-20      |  78.0
+ Charlie Brown | Computer Networks | 2025-01-18      |  91.0
+ Charlie Brown | Web Development   | 2025-02-12      |  85.5
+(5 rows)
+
+postgres=# 

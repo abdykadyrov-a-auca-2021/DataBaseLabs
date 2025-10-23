@@ -1,0 +1,556 @@
+Last login: Tue Oct  7 09:36:52 on ttys000
+azamatabdykadyrov@MacBook-Air-Azamat ~ % psql -h localhost -p 5432 -U azamatabdykadyrov  -d postgres
+
+
+
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# \dt
+                    List of relations
+ Schema |        Name         | Type  |       Owner       
+--------+---------------------+-------+-------------------
+ public | course_enrollments  | table | azamatabdykadyrov
+ public | courses             | table | azamatabdykadyrov
+ public | customers           | table | azamatabdykadyrov
+ public | departments         | table | azamatabdykadyrov
+ public | employees           | table | azamatabdykadyrov
+ public | orders              | table | azamatabdykadyrov
+ public | products            | table | azamatabdykadyrov
+ public | sales               | table | azamatabdykadyrov
+ public | student_enrollments | table | azamatabdykadyrov
+ public | student_phones      | table | azamatabdykadyrov
+ public | students            | table | azamatabdykadyrov
+ public | students_bad        | table | azamatabdykadyrov
+ public | transactions        | table | azamatabdykadyrov
+ public | university_students | table | azamatabdykadyrov
+ public | user_profiles       | table | azamatabdykadyrov
+ public | users               | table | azamatabdykadyrov
+(16 rows)
+
+postgres=# SELECT COUNT(*) AS total_employees 
+FROM employees;
+ total_employees 
+-----------------
+               5
+(1 row)
+
+postgres=# DROP TABLE employees cascade ;
+NOTICE:  drop cascades to constraint sales_employee_id_fkey on table sales
+DROP TABLE
+postgres=# CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    department VARCHAR(50)
+);
+CREATE TABLE
+postgres=# INSERT INTO employees (name, email, department)
+VALUES
+('Alice Johnson', 'alice@company.com', 'Sales'),
+('Bob Smith', NULL, 'Sales'),
+('Charlie Brown', 'charlie@company.com', 'HR'),
+('Diana Prince', 'diana@company.com', 'IT'),
+('Ethan Hunt', NULL, 'IT'),
+('Fiona Davis', 'fiona@company.com', 'Marketing'),
+('George Miller', NULL, 'Marketing');
+INSERT 0 7
+postgres=# SELECT COUNT(*) AS total_employees 
+FROM employees;
+ total_employees 
+-----------------
+               7
+(1 row)
+
+postgres=# SELECT COUNT(email) AS employees_with_email 
+FROM employees;
+ employees_with_email 
+----------------------
+                    4
+(1 row)
+
+postgres=# -- Count unique departments
+SELECT COUNT(DISTINCT department) AS unique_departments 
+FROM employees;
+ unique_departments 
+--------------------
+                  4
+(1 row)
+
+postgres=# -- Пересоздаем таблицу employees с зарплатой
+DROP TABLE IF EXISTS employees;
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    department VARCHAR(50),
+    salary NUMERIC(10,2)
+);
+DROP TABLE
+CREATE TABLE
+postgres=# INSERT INTO employees (name, email, department, salary)
+VALUES
+('Alice Johnson', 'alice@company.com', 'Sales', 1200.00),
+('Bob Smith', NULL, 'Sales', 1100.00),
+('Charlie Brown', 'charlie@company.com', 'HR', 1300.00),
+('Diana Prince', 'diana@company.com', 'IT', 2000.00),
+('Ethan Hunt', NULL, 'IT', 1800.00),
+('Fiona Davis', 'fiona@company.com', 'Marketing', 1500.00),
+('George Miller', NULL, 'Marketing', 1600.00);
+INSERT 0 7
+postgres=# -- Calculate total salary expenditure
+SELECT SUM(salary) AS total_salaries 
+FROM employees;
+ total_salaries 
+----------------
+       10500.00
+(1 row)
+
+postgres=# -- Calculate total sales by department
+SELECT department, SUM(sales_amount) AS total_sales
+FROM sales_data
+GROUP BY department;
+ERROR:  relation "sales_data" does not exist
+LINE 2: FROM sales_data
+             ^
+postgres=# CREATE TABLE sales_data (
+    id SERIAL PRIMARY KEY,
+    department VARCHAR(50),
+    sales_amount NUMERIC(10,2)
+);
+CREATE TABLE
+postgres=# INSERT INTO sales_data (department, sales_amount)
+VALUES
+('Sales', 5000.00),
+('Sales', 7000.00),
+('Marketing', 4000.00),
+('Marketing', 3500.00),
+('IT', 2500.00),
+('HR', 3000.00);
+INSERT 0 6
+postgres=# SELECT department, SUM(sales_amount) AS total_sales
+FROM sales_data
+GROUP BY department;
+ department | total_sales 
+------------+-------------
+ Marketing  |     7500.00
+ Sales      |    12000.00
+ IT         |     2500.00
+ HR         |     3000.00
+(4 rows)
+
+postgres=# -- Calculate average salary
+SELECT AVG(salary) AS average_salary 
+FROM employees;
+    average_salary     
+-----------------------
+ 1500.0000000000000000
+(1 row)
+
+postgres=# -- Find highest and lowest salaries
+SELECT 
+    MAX(salary) AS highest_salary,
+    MIN(salary) AS lowest_salary
+FROM employees;
+ highest_salary | lowest_salary 
+----------------+---------------
+        2000.00 |       1100.00
+(1 row)
+
+postgres=# -- List all employees in each department as a comma-separated string
+SELECT department, STRING_AGG(first_name, ', ') AS employee_names
+FROM employees
+postgres-# ALTER TABLE employees ADD COLUMN first_name VARCHAR(50);
+ERROR:  syntax error at or near "TABLE"
+LINE 3: ALTER TABLE employees ADD COLUMN first_name VARCHAR(50);
+              ^
+postgres=# ;
+postgres=# ALTER TABLE employees ADD COLUMN first_name VARCHAR(50);
+ALTER TABLE
+postgres=# CREATE TABLE employee_skills (
+    id SERIAL PRIMARY KEY,
+    employee_id INT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    skill_name VARCHAR(100) NOT NULL
+);
+CREATE TABLE
+postgres=# INSERT INTO employee_skills (employee_id, skill_name) VALUES
+(1, 'Negotiation'),
+(1, 'CRM'),
+(2, 'Excel'),
+(3, 'Recruiting'),
+(3, 'Onboarding'),
+(4, 'C#'),
+(4, '.NET'),
+(4, 'PostgreSQL'),
+(5, 'Linux'),
+(5, 'Networking'),
+(6, 'Copywriting'),
+(6, 'SEO'),
+(7, 'Analytics');
+INSERT 0 13
+postgres=# -- List all employees in each department as a comma-separated string
+SELECT department, STRING_AGG(first_name, ', ') AS employee_names
+FROM employees
+GROUP BY department;
+
+-- Create a list of skills per employee (ordered alphabetically)
+SELECT employee_id, STRING_AGG(skill_name, ', ' ORDER BY skill_name) AS skills
+FROM employee_skills
+GROUP BY employee_id;
+ department | employee_names 
+------------+----------------
+ Marketing  | 
+ Sales      | 
+ IT         | 
+ HR         | 
+(4 rows)
+
+ employee_id |         skills         
+-------------+------------------------
+           1 | CRM, Negotiation
+           2 | Excel
+           3 | Onboarding, Recruiting
+           4 | .NET, C#, PostgreSQL
+           5 | Linux, Networking
+           6 | Copywriting, SEO
+           7 | Analytics
+(7 rows)
+
+postgres=# SELECT department, ARRAY_AGG(salary) AS salary_array
+FROM employees
+GROUP BY department;
+ department |   salary_array    
+------------+-------------------
+ Marketing  | {1500.00,1600.00}
+ Sales      | {1200.00,1100.00}
+ IT         | {2000.00,1800.00}
+ HR         | {1300.00}
+(4 rows)
+
+postgres=# SELECT 
+    department,
+    STDDEV(salary) AS salary_std_dev,
+    VARIANCE(salary) AS salary_variance
+FROM employees
+GROUP BY department;
+ department |   salary_std_dev    |    salary_variance    
+------------+---------------------+-----------------------
+ Marketing  | 70.7106781186547524 | 5000.0000000000000000
+ Sales      | 70.7106781186547524 | 5000.0000000000000000
+ IT         |    141.421356237310 |    20000.000000000000
+ HR         |                     |                      
+(4 rows)
+
+postgres=# SELECT CORR(experience_years, salary) AS experience_salary_correlation
+FROM employees;
+ERROR:  column "experience_years" does not exist
+LINE 1: SELECT CORR(experience_years, salary) AS experience_salary_c...
+                    ^
+postgres=# DROP TABLE IF EXISTS products;
+
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    category VARCHAR(50),
+    price NUMERIC(10,2)
+);
+DROP TABLE
+CREATE TABLE
+postgres=# INSERT INTO products (name, category, price)
+VALUES
+('iPhone 15', 'Electronics', 999.99),
+('Samsung Galaxy S24', 'Electronics', 899.99),
+('MacBook Air', 'Electronics', 1299.00),
+('Nike Air Max', 'Clothing', 150.00),
+('Adidas Hoodie', 'Clothing', 90.00),
+('Levi’s Jeans', 'Clothing', 110.00),
+('Coffee Maker', 'Home Appliances', 80.00),
+('Blender', 'Home Appliances', 65.00),
+('Microwave', 'Home Appliances', 120.00);
+INSERT 0 9
+postgres=# -- Sales summary by product category
+SELECT 
+    category,
+    COUNT(*) AS number_of_products,
+    SUM(price) AS total_value,
+    AVG(price) AS average_price
+FROM products
+GROUP BY category;
+    category     | number_of_products | total_value |     average_price     
+-----------------+--------------------+-------------+-----------------------
+ Home Appliances |                  3 |      265.00 |   88.3333333333333333
+ Electronics     |                  3 |     3198.98 | 1066.3266666666666667
+ Clothing        |                  3 |      350.00 |  116.6666666666666667
+(3 rows)
+
+postgres=# DROP TABLE IF EXISTS sales;
+
+CREATE TABLE sales (
+    id SERIAL PRIMARY KEY,
+    sale_date DATE NOT NULL,
+    amount NUMERIC(10,2) NOT NULL
+);
+DROP TABLE
+CREATE TABLE
+postgres=# INSERT INTO sales (sale_date, amount)
+VALUES
+('2023-01-15', 1200.00),
+('2023-02-20', 850.00),
+('2023-03-10', 970.00),
+('2023-05-05', 1300.00),
+('2023-07-19', 2200.00),
+('2023-10-25', 1900.00),
+('2024-01-14', 1450.00),
+('2024-03-28', 1100.00),
+('2024-06-12', 1600.00),
+('2024-09-05', 2100.00),
+('2024-11-21', 2300.00),
+('2025-02-18', 1950.00),
+('2025-04-07', 2500.00),
+('2025-07-30', 2700.00),
+('2025-10-10', 3100.00);
+INSERT 0 15
+postgres=# -- Sales analysis by year and quarter
+SELECT 
+    EXTRACT(YEAR FROM sale_date) AS year,
+    EXTRACT(QUARTER FROM sale_date) AS quarter,
+    COUNT(*) AS total_sales,
+    SUM(amount) AS total_revenue
+FROM sales
+GROUP BY EXTRACT(YEAR FROM sale_date), EXTRACT(QUARTER FROM sale_date)
+ORDER BY year, quarter;
+ year | quarter | total_sales | total_revenue 
+------+---------+-------------+---------------
+ 2023 |       1 |           3 |       3020.00
+ 2023 |       2 |           1 |       1300.00
+ 2023 |       3 |           1 |       2200.00
+ 2023 |       4 |           1 |       1900.00
+ 2024 |       1 |           2 |       2550.00
+ 2024 |       2 |           1 |       1600.00
+ 2024 |       3 |           1 |       2100.00
+ 2024 |       4 |           1 |       2300.00
+ 2025 |       1 |           1 |       1950.00
+ 2025 |       2 |           1 |       2500.00
+ 2025 |       3 |           1 |       2700.00
+ 2025 |       4 |           1 |       3100.00
+(12 rows)
+
+postgres=# DROP TABLE IF EXISTS employees;
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    age INT,
+    department VARCHAR(50),
+    salary NUMERIC(10,2)
+);
+ERROR:  cannot drop table employees because other objects depend on it
+DETAIL:  constraint employee_skills_employee_id_fkey on table employee_skills depends on table employees
+HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+ERROR:  relation "employees" already exists
+postgres=# DROP TABLE IF EXISTS employees cas;
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    age INT,
+    department VARCHAR(50),
+    salary NUMERIC(10,2)
+);
+
+postgres=# DROP TABLE IF EXISTS employees cascade;
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    age INT,
+    department VARCHAR(50),
+    salary NUMERIC(10,2)
+);
+NOTICE:  drop cascades to constraint employee_skills_employee_id_fkey on table employee_skills
+DROP TABLE
+CREATE TABLE
+postgres=# INSERT INTO employees (name, age, department, salary)
+VALUES
+('Alice Johnson', 25, 'Sales', 1200.00),
+('Bob Smith', 29, 'Sales', 1100.00),
+('Charlie Brown', 33, 'HR', 1300.00),
+('Diana Prince', 42, 'IT', 2000.00),
+('Ethan Hunt', 38, 'IT', 1800.00),
+('Fiona Davis', 51, 'Marketing', 1500.00),
+('George Miller', 58, 'Marketing', 1600.00);
+INSERT 0 7
+postgres=# 
+postgres=# SELECT 
+    CASE 
+        WHEN age < 30 THEN 'Under 30'
+        WHEN age BETWEEN 30 AND 50 THEN '30-50'
+        ELSE 'Over 50'
+    END AS age_group,
+    COUNT(*) AS employee_count,
+    AVG(salary) AS avg_salary
+FROM employees
+GROUP BY 
+    CASE 
+        WHEN age < 30 THEN 'Under 30'
+        WHEN age BETWEEN 30 AND 50 THEN '30-50'
+        ELSE 'Over 50'
+    END;
+
+
+
+
+
+
+ age_group | employee_count |      avg_salary       
+-----------+----------------+-----------------------
+ Under 30  |              2 | 1150.0000000000000000
+ Over 50   |              2 | 1550.0000000000000000
+ 30-50     |              3 | 1700.0000000000000000
+(3 rows)
+
+postgres-# 
+postgres-# 
+postgres-# DROP TABLE IF EXISTS employees;
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    department VARCHAR(50),
+    salary NUMERIC(10,2)
+);
+
+ERROR:  relation "employees" already exists
+postgres=# ;
+postgres=# DROP TABLE IF EXISTS employees;
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    department VARCHAR(50),
+    salary NUMERIC(10,2)
+);
+DROP TABLE
+CREATE TABLE
+postgres=# INSERT INTO employees (name, department, salary) VALUES
+('Alice Johnson', 'Sales', 1200.00),
+('Bob Smith', 'Sales', 1100.00),
+('Cathy Brown', 'Sales', 1300.00),
+('David Lee', 'Sales', 1250.00),
+('Ella Taylor', 'Sales', 1180.00),
+('Frank Moore', 'Sales', 1350.00),
+('Grace Kim', 'IT', 2000.00),
+('Henry Clark', 'IT', 1900.00),
+('Ivy Scott', 'HR', 1500.00),
+('Jack Young', 'Marketing', 1400.00);
+INSERT 0 10
+postgres=# SELECT 
+    department,
+    COUNT(*) AS employee_count
+FROM employees
+GROUP BY department
+HAVING COUNT(*) > 5;
+ department | employee_count 
+------------+----------------
+ Sales      |              6
+(1 row)
+
+postgres=# DROP TABLE IF EXISTS employees;
+
+CREATE TABLE employees (
+    employee_id SERIAL PRIMARY KEY,
+    first_name  VARCHAR(50) NOT NULL,
+    department  VARCHAR(50) NOT NULL,
+    salary      NUMERIC(10,2) NOT NULL
+);
+DROP TABLE
+CREATE TABLE
+postgres=# INSERT INTO employees (first_name, department, salary) VALUES
+('Alice',   'Sales',     1200.00),
+('Bob',     'Sales',     1100.00),
+('Cathy',   'Sales',     1500.00),
+('Diana',   'IT',        2200.00),
+('Ethan',   'IT',        1800.00),
+('Fiona',   'Marketing', 1400.00),
+('George',  'Marketing', 1600.00),
+('Hannah',  'Marketing', 1550.00);
+INSERT 0 8
+postgres=# SELECT department, AVG(salary) AS dept_avg_salary
+FROM employees
+GROUP BY department;
+ department |    dept_avg_salary    
+------------+-----------------------
+ Marketing  | 1516.6666666666666667
+ Sales      | 1266.6666666666666667
+ IT         | 2000.0000000000000000
+(3 rows)
+
+postgres=# SELECT 
+    employee_id,
+    first_name,
+    department,
+    salary,
+    AVG(salary) OVER (PARTITION BY department) AS dept_avg_salary
+FROM employees
+ORDER BY department, employee_id;
+ employee_id | first_name | department | salary  |    dept_avg_salary    
+-------------+------------+------------+---------+-----------------------
+           4 | Diana      | IT         | 2200.00 | 2000.0000000000000000
+           5 | Ethan      | IT         | 1800.00 | 2000.0000000000000000
+           6 | Fiona      | Marketing  | 1400.00 | 1516.6666666666666667
+           7 | George     | Marketing  | 1600.00 | 1516.6666666666666667
+           8 | Hannah     | Marketing  | 1550.00 | 1516.6666666666666667
+           1 | Alice      | Sales      | 1200.00 | 1266.6666666666666667
+           2 | Bob        | Sales      | 1100.00 | 1266.6666666666666667
+           3 | Cathy      | Sales      | 1500.00 | 1266.6666666666666667
+(8 rows)
+
+postgres=# SELECT 
+    department,
+    COUNT(*) AS employee_count,
+    MIN(salary) AS min_salary,
+    MAX(salary) AS max_salary,
+    AVG(salary) AS avg_salary,
+    STDDEV(salary) AS salary_std_dev
+FROM employees
+GROUP BY department
+ORDER BY avg_salary DESC;
+ department | employee_count | min_salary | max_salary |      avg_salary       |    salary_std_dev    
+------------+----------------+------------+------------+-----------------------+----------------------
+ IT         |              2 |    1800.00 |    2200.00 | 2000.0000000000000000 |     282.842712474619
+ Marketing  |              3 |    1400.00 |    1600.00 | 1516.6666666666666667 | 104.0832999733066368
+ Sales      |              3 |    1100.00 |    1500.00 | 1266.6666666666666667 |     208.166599946613
+(3 rows)
+
+postgres=# -- Count employees by different criteria
+SELECT 
+    department,
+    COUNT(*) AS total_employees,
+    COUNT(CASE WHEN salary > 50000 THEN 1 END) AS high_earners,
+    COUNT(CASE WHEN hire_date > '2023-01-01' THEN 1 END) AS recent_hires
+FROM employees
+GROUP BY department;
+ERROR:  column "hire_date" does not exist
+LINE 5:     COUNT(CASE WHEN hire_date > '2023-01-01' THEN 1 END) AS ...
+                            ^
+postgres=# -- Calculate percentage of total
+SELECT 
+    department,
+    COUNT(*) AS dept_count,
+    COUNT(*)::FLOAT / (SELECT COUNT(*) FROM employees) * 100 AS percentage
+FROM employees
+GROUP BY department
+ORDER BY percentage DESC;
+
+ department | dept_count | percentage 
+------------+------------+------------
+ Marketing  |          3 |       37.5
+ Sales      |          3 |       37.5
+ IT         |          2 |         25
+(3 rows)
+
+postgres=# 

@@ -1,0 +1,43 @@
+Last login: Wed Oct  1 23:45:38 on ttys000
+azamatabdykadyrov@MacBook-Air-Azamat ~ % psql -h localhost -p 5432 -U azamatabdykadyrov  -d postgres
+
+
+
+Password for user azamatabdykadyrov: 
+psql (14.19 (Homebrew), server 17.0)
+WARNING: psql major version 14, server major version 17.
+         Some psql features might not work.
+Type "help" for help.
+
+postgres=# \dt
+                    List of relations
+ Schema |        Name         | Type  |       Owner       
+--------+---------------------+-------+-------------------
+ public | course_enrollments  | table | azamatabdykadyrov
+ public | courses             | table | azamatabdykadyrov
+ public | customers           | table | azamatabdykadyrov
+ public | departments         | table | azamatabdykadyrov
+ public | employees           | table | azamatabdykadyrov
+ public | orders              | table | azamatabdykadyrov
+ public | products            | table | azamatabdykadyrov
+ public | student_enrollments | table | azamatabdykadyrov
+ public | student_phones      | table | azamatabdykadyrov
+ public | students            | table | azamatabdykadyrov
+ public | students_bad        | table | azamatabdykadyrov
+ public | transactions        | table | azamatabdykadyrov
+ public | university_students | table | azamatabdykadyrov
+ public | user_profiles       | table | azamatabdykadyrov
+ public | users               | table | azamatabdykadyrov
+(15 rows)
+
+postgres=# \d courses 
+                        Table "public.courses"
+   Column    |          Type          | Collation | Nullable | Default 
+-------------+------------------------+-----------+----------+---------
+ course_id   | integer                |           | not null | 
+ course_name | character varying(100) |           | not null | 
+ credits     | integer                |           |          | 
+Indexes:
+    "courses_pkey" PRIMARY KEY, btree (course_id)
+
+postgres=# 

@@ -1,0 +1,358 @@
+postgres=# SELECT * FROM employees;
+ emp_id | first_name | last_name | position | salary | hire_date | dept_id 
+--------+------------+-----------+----------+--------+-----------+---------
+(0 rows)
+
+postgres=# SELECT name, department FROM employees;
+ERROR:  column "name" does not exist
+LINE 1: SELECT name, department FROM employees;
+               ^
+postgres=# SELECT first_name, department FROM employees;
+ERROR:  column "department" does not exist
+LINE 1: SELECT first_name, department FROM employees;
+                           ^
+postgres=# SELECT first_name, dept_id  FROM employees;
+ first_name | dept_id 
+------------+---------
+(0 rows)
+
+postgres=# INSERT INTO employees (first_name, last_name, position, salary, hire_date, dept_id)
+VALUES
+('Азамат', 'Абдыкадыров', 'Backend Developer', 95000, '2023-05-10', 1),
+('Алия', 'Мамбетова', 'HR Manager', 70000, '2022-03-15', 2),
+('Бакыт', 'Султанов', 'QA Engineer', 65000, '2024-01-22', 1),
+('Эржан', 'Камалов', 'Team Lead', 120000, '2021-10-01', 3),
+('Жанара', 'Орозова', 'UI/UX Designer', 80000, '2023-02-18', 2);
+INSERT 0 5
+postgres=# SELECT first_name, dept_id  FROM employees;
+ first_name | dept_id 
+------------+---------
+ Азамат     |       1
+ Алия       |       2
+ Бакыт      |       1
+ Эржан      |       3
+ Жанара     |       2
+(5 rows)
+
+postgres=# SELECT * FROM employees;
+ emp_id | first_name |  last_name  |     position      |  salary   | hire_date  | dept_id 
+--------+------------+-------------+-------------------+-----------+------------+---------
+      1 | Азамат     | Абдыкадыров | Backend Developer |  95000.00 | 2023-05-10 |       1
+      2 | Алия       | Мамбетова   | HR Manager        |  70000.00 | 2022-03-15 |       2
+      3 | Бакыт      | Султанов    | QA Engineer       |  65000.00 | 2024-01-22 |       1
+      4 | Эржан      | Камалов     | Team Lead         | 120000.00 | 2021-10-01 |       3
+      5 | Жанара     | Орозова     | UI/UX Designer    |  80000.00 | 2023-02-18 |       2
+(5 rows)
+
+postgres=# SELECT last_name, salary, salary * 0.10 AS potential_bonus
+FROM employees;
+  last_name  |  salary   | potential_bonus 
+-------------+-----------+-----------------
+ Абдыкадыров |  95000.00 |       9500.0000
+ Мамбетова   |  70000.00 |       7000.0000
+ Султанов    |  65000.00 |       6500.0000
+ Камалов     | 120000.00 |      12000.0000
+ Орозова     |  80000.00 |       8000.0000
+(5 rows)
+
+postgres=# SELECT first_name, salary
+FROM employees
+WHERE position = 'Team Lead';
+ first_name |  salary   
+------------+-----------
+ Эржан      | 120000.00
+(1 row)
+
+postgres=# SELECT first_name
+FROM employees
+WHERE salary > 75000 AND dept_id = 1;
+ first_name 
+------------
+ Азамат
+(1 row)
+
+postgres=# CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(100)
+);
+
+INSERT INTO customers (customer_name)
+VALUES
+('Brandon Smith'),
+('Brad Pitt'),
+('Brian Johnson'),
+('Alice Brown'),
+('Michael Jordan');
+ERROR:  relation "customers" already exists
+INSERT 0 5
+postgres=# DROP TABLE customers ;
+DROP TABLE
+postgres=# CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(100)
+);
+
+INSERT INTO customers (customer_name)
+VALUES
+('Brandon Smith'),
+('Brad Pitt'),
+('Brian Johnson'),
+('Alice Brown'),
+('Michael Jordan');
+CREATE TABLE
+INSERT 0 5
+postgres=# CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100)
+);
+
+INSERT INTO products (product_name)
+VALUES
+('Strawberry'),
+('Blueberry'),
+('Raspberry'),
+('Blackberry'),
+('Apple'),
+('Banana'),
+('Cherry');
+ERROR:  relation "products" already exists
+INSERT 0 7
+postgres=# DROP TABLE products ;
+DROP TABLE
+postgres=# DROP TABLE users;
+ERROR:  cannot drop table users because other objects depend on it
+DETAIL:  constraint user_profiles_user_id_fkey on table user_profiles depends on table users
+HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+postgres=# DROP TABLE users cascade;
+NOTICE:  drop cascades to constraint user_profiles_user_id_fkey on table user_profiles
+DROP TABLE
+postgres=# CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    product_name VARCHAR(100)
+);
+
+INSERT INTO products (product_name)
+VALUES
+('Strawberry'),
+('Blueberry'),
+('Raspberry'),
+('Blackberry'),
+('Apple'),
+('Banana'),
+('Cherry');
+CREATE TABLE
+INSERT 0 7
+postgres=# CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    email VARCHAR(100)
+);
+
+INSERT INTO users (email)
+VALUES
+('azamat@gmail.com'),
+('john.doe@outlook.com'),
+('brad_pitt@GMAIL.com'),
+('info@yahoo.com'),
+('contact@Gmail.Com');
+CREATE TABLE
+INSERT 0 5
+postgres=# SELECT customer_name
+FROM customers
+WHERE customer_name LIKE 'Bra%';
+ customer_name 
+---------------
+ Brandon Smith
+ Brad Pitt
+(2 rows)
+
+postgres=# SELECT product_name
+FROM products
+WHERE product_name LIKE '%berry';
+ product_name 
+--------------
+ Strawberry
+ Blueberry
+ Raspberry
+ Blackberry
+(4 rows)
+
+postgres=# SELECT email
+FROM users
+WHERE email ILIKE '%@gmail.com';
+        email        
+---------------------
+ azamat@gmail.com
+ brad_pitt@GMAIL.com
+ contact@Gmail.Com
+(3 rows)
+
+postgres=# SELECT first_name
+FROM employees
+WHERE name ~ '^[AB]';
+ERROR:  column "name" does not exist
+LINE 3: WHERE name ~ '^[AB]';
+              ^
+postgres=# SELECT first_name
+FROM employees
+WHERE first_name ~ '^[AB]';
+ first_name 
+------------
+(0 rows)
+
+postgres=# SELECT first_name
+FROM employees
+WHERE first_name ~ '^[АБ]';
+ first_name 
+------------
+ Азамат
+ Алия
+ Бакыт
+(3 rows)
+
+postgres=# SELECT email
+FROM users
+WHERE email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$';
+        email         
+----------------------
+ azamat@gmail.com
+ john.doe@outlook.com
+ brad_pitt@GMAIL.com
+ info@yahoo.com
+ contact@Gmail.Com
+(5 rows)
+
+postgres=# \dt employees 
+               List of relations
+ Schema |   Name    | Type  |       Owner       
+--------+-----------+-------+-------------------
+ public | employees | table | azamatabdykadyrov
+(1 row)
+
+
+
+postgres=# SELECT * FROM employees; 
+ emp_id | first_name |  last_name  |     position      |  salary   | hire_date  | dept_id 
+--------+------------+-------------+-------------------+-----------+------------+---------
+      1 | Азамат     | Абдыкадыров | Backend Developer |  95000.00 | 2023-05-10 |       1
+      2 | Алия       | Мамбетова   | HR Manager        |  70000.00 | 2022-03-15 |       2
+      3 | Бакыт      | Султанов    | QA Engineer       |  65000.00 | 2024-01-22 |       1
+      4 | Эржан      | Камалов     | Team Lead         | 120000.00 | 2021-10-01 |       3
+      5 | Жанара     | Орозова     | UI/UX Designer    |  80000.00 | 2023-02-18 |       2
+(5 rows)
+
+(END)
+
+
+
+~
+~
+~
+postgres=# 
+postgres=# 
+postgres=# DROP TABLE employees ;
+DROP TABLE
+postgres=# CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    position VARCHAR(50),
+    salary NUMERIC(10,2),
+    hire_date DATE,
+    department_id INT
+);
+
+INSERT INTO employees (name, position, salary, hire_date, department_id)
+VALUES
+('Азамат Абдыкадыров', 'Backend Developer', 95000, '2023-05-10', 1),
+('Алия Мамбетова', 'HR Manager', 70000, '2022-03-15', 2),
+('Бакыт Султанов', 'QA Engineer', 65000, '2024-01-22', 1),
+('Эржан Камалов', 'Team Lead', 120000, '2021-10-01', 3),
+('Жанара Орозова', 'UI/UX Designer', 80000, '2023-02-18', 2);
+CREATE TABLE
+INSERT 0 5
+postgres=# CREATE TABLE sales (
+    sale_id SERIAL PRIMARY KEY,
+    employee_id INT REFERENCES employees(id),
+    amount NUMERIC(10,2)
+);
+
+INSERT INTO sales (employee_id, amount)
+VALUES
+(1, 1500.00),           
+(3, 800.00),           
+(4, 2500.00),          
+(5, 500.00);   
+CREATE TABLE
+INSERT 0 4
+postgres=# SELECT name, department_id
+FROM employees
+WHERE department_id IN (1, 3);
+        name        | department_id 
+--------------------+---------------
+ Азамат Абдыкадыров |             1
+ Бакыт Султанов     |             1
+ Эржан Камалов      |             3
+(3 rows)
+
+postgres=# SELECT name
+FROM employees
+WHERE id IN (SELECT employee_id FROM sales WHERE amount > 1000);
+        name        
+--------------------
+ Азамат Абдыкадыров
+ Эржан Камалов
+(2 rows)
+
+postgres=# SELECT name
+FROM employees e
+WHERE EXISTS (
+  SELECT 1
+  FROM sales s
+  WHERE s.employee_id = e.id AND s.amount > 1000
+);
+        name        
+--------------------
+ Азамат Абдыкадыров
+ Эржан Камалов
+(2 rows)
+
+postgres=# SELECT 
+  name,
+  position,
+  salary,
+  CASE
+    WHEN salary > 100000 THEN 'Senior'
+    WHEN salary BETWEEN 70000 AND 100000 THEN 'Mid-Level'
+    ELSE 'Junior'
+  END AS employee_level
+FROM employees;
+        name        |     position      |  salary   | employee_level 
+--------------------+-------------------+-----------+----------------
+ Азамат Абдыкадыров | Backend Developer |  95000.00 | Mid-Level
+ Алия Мамбетова     | HR Manager        |  70000.00 | Mid-Level
+ Бакыт Султанов     | QA Engineer       |  65000.00 | Junior
+ Эржан Камалов      | Team Lead         | 120000.00 | Senior
+ Жанара Орозова     | UI/UX Designer    |  80000.00 | Mid-Level
+(5 rows)
+
+postgres=# WITH department_averages AS (
+  SELECT
+    department_id,
+    AVG(salary) AS avg_salary
+  FROM employees
+  GROUP BY department_id
+)
+SELECT
+  e.name,
+  e.salary,
+  e.department_id,
+  da.avg_salary
+FROM employees e
+JOIN department_averages da ON e.department_id = da.department_id
+WHERE e.salary > da.avg_salary;
+        name        |  salary  | department_id |     avg_salary     
+--------------------+----------+---------------+--------------------
+ Азамат Абдыкадыров | 95000.00 |             1 | 80000.000000000000
+ Жанара Орозова     | 80000.00 |             2 | 75000.000000000000
+(2 rows)
+
+postgres=# 
