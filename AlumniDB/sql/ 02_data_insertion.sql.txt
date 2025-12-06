@@ -1,0 +1,47 @@
+-- 02_data_insertion.sql
+-- Наполняем таблицы тестовыми данными
+
+-- 10 выпускников AUCA (случайный придуманный пример)
+
+INSERT INTO graduate (full_name, graduation_year, major, email, current_country, current_city)
+VALUES
+    ('Azamat Abdykadyrov', 2026, 'Software Engineering', 'azamat@example.com', 'Kyrgyzstan', 'Bishkek'),
+    ('Baitur Suiunbaev',   2025, 'Computer Science',     'baitur@example.com', 'Kyrgyzstan', 'Bishkek'),
+    ('Bekjan Nazarov',     2024, 'Business Administration','bekjan@example.com', 'Kyrgyzstan', 'Osh'),
+    ('Aizada Toktobekova', 2023, 'Economics',            'aizada@example.com', 'Germany', 'Berlin'),
+    ('Nurislam Omorov',    2022, 'International Relations','nurislam@example.com', 'Kyrgyzstan', 'Bishkek'),
+    ('Alina Sydykova',     2021, 'Software Engineering', 'alina@example.com', 'USA', 'New York'),
+    ('Timur Akmatov',      2020, 'Applied Math',         'timur@example.com', 'Kyrgyzstan', 'Bishkek'),
+    ('Aidana Asanova',     2019, 'Environmental Studies','aidana@example.com', 'Netherlands', 'Amsterdam'),
+    ('Ruslan Uulu',        2018, 'Business Administration','ruslan@example.com', 'Kazakhstan', 'Almaty'),
+    ('Aijamal Tursunova',  2017, 'Software Engineering', 'aijamal@example.com', 'Kyrgyzstan', 'Bishkek');
+
+-- Привяжем LinkedIn-профили к нескольким выпускникам
+
+INSERT INTO linkedin_profile (graduate_id, profile_url, headline, location, last_scraped_at)
+VALUES
+    (1, 'https://www.linkedin.com/in/azamat-abdykadyrov-bb270bb1', 'Consultant', 'Kyrgyzstan', NOW()),
+    (2, 'https://www.linkedin.com/in/baitur-suiunbaev-142180303',  'Java Backend Developer', 'Bishkek, Kyrgyzstan', NOW()),
+    (3, 'https://www.linkedin.com/in/bekjan-nazarov-815a62b9',     'AUCA Graduate', 'Kyrgyzstan', NOW()),
+    (6, 'https://www.linkedin.com/in/alina-example',               'Software Engineer', 'New York, USA', NOW());
+
+-- Пример истории трудоустройства
+
+INSERT INTO employment_history
+    (graduate_id, company_name, position_title, city, country, start_date, end_date, is_current, source)
+VALUES
+    (1, 'TimelySkills',      'Backend Developer',  'Bishkek', 'Kyrgyzstan', DATE '2024-02-01', NULL, TRUE,  'linkedin'),
+    (2, 'Some IT Company',   'Java Backend Dev',   'Bishkek', 'Kyrgyzstan', DATE '2023-09-01', NULL, TRUE,  'linkedin'),
+    (3, 'Local Bank',        'Business Analyst',   'Osh',     'Kyrgyzstan', DATE '2024-01-15', NULL, TRUE,  'manual'),
+    (4, 'German Consulting', 'Junior Economist',   'Berlin',  'Germany',    DATE '2023-10-01', NULL, TRUE,  'linkedin'),
+    (6, 'Big Tech Corp',     'Software Engineer',  'New York','USA',        DATE '2022-07-01', NULL, TRUE,  'linkedin'),
+    (7, 'Analytics Lab',     'Data Analyst',       'Bishkek', 'Kyrgyzstan', DATE '2021-03-01', DATE '2023-05-01', FALSE, 'manual');
+
+-- Пример записей в лог скрейпинга (сюда будет писать Python-скрейпер)
+
+INSERT INTO scrape_log (graduate_id, status, message)
+VALUES
+    (1, 'success', 'Profile scraped successfully'),
+    (2, 'success', 'Profile scraped successfully'),
+    (3, 'warning', 'LinkedIn profile found but no experience section'),
+    (4, 'failure', 'No LinkedIn profile found');

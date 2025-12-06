@@ -1,0 +1,86 @@
+-- 01_schema_creation.sql
+-- ЧИСТЫЙ СТАРТ: дропаем таблицы, если они уже были
+
+DROP TABLE IF EXISTS scrape_log        CASCADE;
+DROP TABLE IF EXISTS employment_history CASCADE;
+DROP TABLE IF EXISTS linkedin_profile   CASCADE;
+DROP TABLE IF EXISTS graduate           CASCADE;
+
+-- =========================
+-- 1. Таблица выпускников
+-- =========================
+
+CREATE TABLE graduate (
+    graduate_id      SERIAL PRIMARY KEY,
+    full_name        VARCHAR(200) NOT NULL,
+    graduation_year  INTEGER      NOT NULL CHECK (graduation_year BETWEEN 1995 AND 2035),
+    major            VARCHAR(200) NOT NULL,
+    email            VARCHAR(200),
+    phone            VARCHAR(50),
+    current_country  VARCHAR(100),
+    current_city     VARCHAR(100),
+    notes            TEXT
+);
+
+-- Индекс для быстрого поиска по имени
+CREATE INDEX idx_graduate_full_name ON graduate (full_name);
+
+-- =========================
+-- 2. Таблица LinkedIn-профилей
+-- =========================
+
+CREATE TABLE linkedin_profile (
+    profile_id      SERIAL PRIMARY KEY,
+    graduate_id     INTEGER NOT NULL REFERENCES graduate(graduate_id) ON DELETE CASCADE,
+    profile_url     TEXT    NOT NULL UNIQUE,
+    headline        TEXT,
+    location        VARCHAR(200),
+    last_scraped_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_linkedin_profile_graduate ON linkedin_profile (graduate_id);
+
+-- =========================
+-- 3. История трудоустройства
+-- =========================
+
+CREATE TABLE employment_history (
+    employment_id   SERIAL PRIMARY KEY,
+    graduate_id     INTEGER NOT NULL REFERENCES graduate(graduate_id) ON DELETE CASCADE,
+    company_name    VARCHAR(200) NOT NULL,
+    position_title  VARCHAR(200) NOT NULL,
+    city            VARCHAR(100),
+    country         VARCHAR(100),
+    start_date      DATE,
+    end_date        DATE,
+    is_current      BOOLEAN DEFAULT FALSE,
+    source          VARCHAR(20) NOT NULL CHECK (source IN ('linkedin', 'manual'))
+);
+
+CREATE INDEX idx_employment_graduate ON employment_history (graduate_id);
+CREATE INDEX idx_employment_company  ON employment_history (company_name);
+
+-- =========================
+-- 4. Лог скрейпинга / обновления
+-- =========================
+
+CREATE TABLE scrape_log (
+    log_id       SERIAL PRIMARY KEY,
+    graduate_id  INTEGER REFERENCES graduate(graduate_id) ON DELETE CASCADE,
+    status       VARCHAR(20) NOT NULL CHECK (status IN ('success', 'failure', 'warning')),
+    message      TEXT,
+    logged_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_scrape_log_graduate ON scrape_log (graduate_id);
+
+-- =========================
+-- 5. Маленькие поправки
+-- =====+++=================
+
+ALTER TABLE scrape_log
+DROP CONSTRAINT scrape_log_status_check;
+
+ALTER TABLE scrape_log
+ADD CONSTRAINT scrape_log_status_check
+CHECK (status IN ('ok', 'not_found', 'warning', 'error'));

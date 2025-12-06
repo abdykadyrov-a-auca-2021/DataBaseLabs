@@ -1,0 +1,55 @@
+-- 03_queries_basic.sql
+-- Базовые SELECT / INSERT / UPDATE / DELETE + простые JOIN
+
+-- 1. Посмотреть всех выпускников
+SELECT * FROM graduate;
+
+-- 2. Найти выпускников по году выпуска
+SELECT full_name, graduation_year, major
+FROM graduate
+WHERE graduation_year = 2026;
+
+-- 3. Примеры INSERT / UPDATE / DELETE
+
+-- 3.1. Добавить нового выпускника
+INSERT INTO graduate (full_name, graduation_year, major, email, current_country, current_city)
+VALUES ('Test Student', 2025, 'Software Engineering', 'test.student@example.com', 'Kyrgyzstan', 'Bishkek');
+
+-- 3.2. Обновить major у конкретного выпускника
+UPDATE graduate
+SET major = 'Computer Science'
+WHERE full_name = 'Test Student';
+
+-- 3.3. Удалить тестового выпускника
+DELETE FROM graduate
+WHERE full_name = 'Test Student';
+
+-- 4. JOIN: выпускники и их текущая работа (is_current = TRUE)
+
+SELECT
+    g.graduate_id,
+    g.full_name,
+    g.graduation_year,
+    e.company_name,
+    e.position_title,
+    e.city,
+    e.country
+FROM graduate g
+JOIN employment_history e
+  ON g.graduate_id = e.graduate_id
+WHERE e.is_current = TRUE
+ORDER BY g.graduation_year DESC;
+
+-- 5. Выпускники, у которых есть привязанный LinkedIn-профиль
+
+SELECT
+    g.graduate_id,
+    g.full_name,
+    l.profile_url,
+    l.headline,
+    l.location,
+    l.last_scraped_at
+FROM graduate g
+JOIN linkedin_profile l
+  ON g.graduate_id = l.graduate_id
+ORDER BY g.graduate_id;

@@ -1,0 +1,91 @@
+-- 04_queries_advanced.sql
+-- CTE, агрегаты, оконные функции, аналитика по трудоустройству
+
+-- 1. Кол-во выпускников по году выпуска
+
+SELECT
+    graduation_year,
+    COUNT(*) AS graduate_count
+FROM graduate
+GROUP BY graduation_year
+ORDER BY graduation_year DESC;
+
+-- 2. Сколько выпускников имеют хотя бы одну запись о трудоустройстве
+
+SELECT
+    COUNT(DISTINCT g.graduate_id) AS employed_graduates,
+    COUNT(*)                      AS total_graduates,
+    ROUND(
+        COUNT(DISTINCT g.graduate_id)::NUMERIC / COUNT(*) FILTER (WHERE g.graduate_id IS NOT NULL) * 100,
+        1
+    ) AS employment_rate_percent
+FROM graduate g
+LEFT JOIN employment_history e
+  ON g.graduate_id = e.graduate_id;
+
+-- 3. Топ компаний по количеству выпускников
+
+SELECT
+    company_name,
+    COUNT(DISTINCT graduate_id) AS alumni_count
+FROM employment_history
+GROUP BY company_name
+ORDER BY alumni_count DESC, company_name
+LIMIT 5;
+
+-- 4. Оконная функция: пометить "текущую" работу как первую по дате начала
+
+WITH ranked_jobs AS (
+    SELECT
+        e.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY graduate_id
+            ORDER BY
+                CASE WHEN is_current THEN 0 ELSE 1 END,
+                COALESCE(start_date, DATE '1900-01-01') DESC
+        ) AS rn
+    FROM employment_history e
+)
+SELECT
+    g.full_name,
+    r.company_name,
+    r.position_title,
+    r.city,
+    r.country,
+    r.start_date,
+    r.end_date,
+    r.is_current
+FROM graduate g
+JOIN ranked_jobs r
+  ON g.graduate_id = r.graduate_id
+WHERE r.rn = 1
+ORDER BY g.graduation_year DESC;
+
+-- 5. Employment rate по годам выпуска
+
+WITH per_grad AS (
+    SELECT
+        g.graduate_id,
+        g.graduation_year,
+        CASE WHEN EXISTS (
+            SELECT 1 FROM employment_history e
+            WHERE e.graduate_id = g.graduate_id
+        )
+        THEN 1 ELSE 0 END AS is_employed
+    FROM graduate g
+),
+agg AS (
+    SELECT
+        graduation_year,
+        COUNT(*)                       AS total_grads,
+        SUM(is_employed)              AS employed_grads
+    FROM per_grad
+    GROUP BY graduation_year
+)
+SELECT
+    graduation_year,
+    total_grads,
+    employed_grads,
+    ROUND(employed_grads::NUMERIC / total_grads * 100, 1) AS employment_rate_percent
+FROM agg
+ORDER BY graduation_year DESC;
